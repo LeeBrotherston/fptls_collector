@@ -691,7 +691,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 				fp_packet->sig_alg_length > 0 ; arse = arse + 2) {
 
 				fprintf(log_fd, "0x%.2X%.2X", fp_packet->sig_alg[arse], fp_packet->sig_alg[arse+1]);
-				if ((arse + 1) < (fp_packet->sig_alg_length)) {
+				if ((arse + 2) < (fp_packet->sig_alg_length)) {
 					fprintf(log_fd, " ");
 				}
 			}
@@ -707,17 +707,6 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 				if ((arse + 1) < fp_packet->ec_point_fmt_length) {
 					fprintf(log_fd, " ");
 				}
-			}
-			fprintf(log_fd, "\"");
-		}
-
-		if(server_name != NULL) {
-			fprintf(log_fd, ", \"server_name\": \"");
-			for (arse = 7 ; arse <= (server_name[0]*256 + server_name[1]) + 1 ; arse++) {
-				if (server_name[arse] > 0x20 && server_name[arse] < 0x7b)
-					fprintf(log_fd, "%c", server_name[arse]);
-				else
-					fprintf(log_fd, "*");
 			}
 			fprintf(log_fd, "\"");
 		}
