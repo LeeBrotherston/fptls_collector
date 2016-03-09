@@ -72,7 +72,6 @@ void print_usage(char *bin_name) {
 	fprintf(stderr, "    -i <interface>    Sniff packets from specified interface\n");
 	fprintf(stderr, "    -p <pcap file>    Read packets from specified pcap file\n");
 	fprintf(stderr, "    -P <pcap file>    Save packets to specified pcap file for unknown fingerprints\n");
-	fprintf(stderr, "    -j <json file>    Output JSON fingerprints\n");
 	fprintf(stderr, "    -l <log file>     Output logfile (JSON format)\n");
 	fprintf(stderr, "    -d                Show reasons for discarded packets (post BPF)\n");
 	fprintf(stderr, "    -u <uid>          Drop privileges to specified UID (not username)\n");
@@ -147,16 +146,7 @@ int main(int argc, char **argv) {
 					exit(-1);
 				}
 				handle = pcap_open_live(argv[++i], SNAP_LEN, 1, 1000, errbuf);
-				printf("Using interface: \033[1;36m%s\033[1;m\n", argv[i]);
-				break;
-			case 'j':
-				/* JSON output to file */
-				if((json_fd = fopen(argv[++i], "a")) == NULL) {
-					printf("Cannot open JSON file for output\n");
-					exit(-1);
-				}
-				// Buffering is fine, but linebuf needed for tailers to work properly
-				setlinebuf(json_fd);
+				printf("Using interface: %s\n", argv[i]);
 				break;
 			case 'l':
 				/* Output to log file */
@@ -164,6 +154,7 @@ int main(int argc, char **argv) {
 					printf("Cannot open log file for output\n");
 					exit(-1);
 				}
+				json_fd = log_fd;
 				// Buffering is fine, but linebuf needed for tailers to work properly
 				setlinebuf(log_fd);
 				break;

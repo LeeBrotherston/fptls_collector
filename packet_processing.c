@@ -565,7 +565,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 					 */
 					 fprintf(log_fd, "{ "); // May need more header to define type?
 					 fprintf(log_fd, "\"timestamp\": \"%s\", ", printable_time);
-					 fprintf(log_fd, "\"event\": \"fingerprint_match\", ");
+					 fprintf(log_fd, "\"event\": \"connection\", ");
 
 					 fprintf(log_fd, "\"ip_version\": ");
 					 switch(ip_version) {
@@ -648,7 +648,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
  						}
  					}
 
-					fprintf(log_fd, "\" }\n");
+					fprintf(log_fd, "\", \"fingerprint\": ");
 
 
 		/* ********************************************* */
@@ -744,7 +744,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 				fprintf(json_fd, "\"");
 			}
 
-			fprintf(json_fd, "}\n");
+			fprintf(json_fd, "} }\n");
 			/* **************************** */
 			/* END OF RECORD - OR SOMETHING */
 			/* **************************** */
