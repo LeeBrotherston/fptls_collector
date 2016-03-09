@@ -3,12 +3,12 @@
 CFLAGS=-Wall -pedantic -Os
 LDFLAGS=-lpcap
 
-all: fingerprintls
+all: fptls_collector
 
-fingerprintls:
-	$(CC) $(CFLAGS) fingerprintls.c -o fingerprintls $(LDFLAGS)
+fptls_collector:
+	$(CC) $(CFLAGS) fptls_collector.c -o fptls_collector $(LDFLAGS)
 
 clean:
-	rm -rf fingerprintls fingerprintls.o
+	rm -rf fptls_collector fptls_collector.o
 
 .PHONY: clean

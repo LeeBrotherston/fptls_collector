@@ -56,7 +56,7 @@ mistakes, kthnxbai.
 #include "signal.c"
 
 /* My own header sherbizzle */
-#include "fingerprintls.h"
+#include "fptls_collector.h"
 
 /* Stuff to process packets */
 #include "packet_processing.c"
