@@ -336,28 +336,6 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		/* The bit that grabs the useful info from packets (or sets pointers to it) */
 		/* ************************************************************************ */
 
-		/* ID and Desc (with defaults for unknown fingerprints) */
-		fp_packet->fingerprint_id = 0;
-		switch(ip_version) {
-			case 7:
-				/* Temporarily Doing this to PoC teredo.  Will use outer and inner once it's working */
-				/* IPv4 source and IPv6 dest is sorta what the connection is, so temping with that */
-				inet_ntop(AF_INET,(void*)&ipv4->ip_src,src_address_buffer,sizeof(src_address_buffer));
-				inet_ntop(AF_INET6,(void*)&teredo->ip6_dst,dst_address_buffer,sizeof(dst_address_buffer));
-				break;
-			case 4:
-				inet_ntop(af_type,(void*)&ipv4->ip_src,src_address_buffer,sizeof(src_address_buffer));
-				inet_ntop(af_type,(void*)&ipv4->ip_dst,dst_address_buffer,sizeof(dst_address_buffer));
-				break;
-			case 6:
-				inet_ntop(af_type,(void*)&ipv6->ip6_src,src_address_buffer,sizeof(src_address_buffer));
-				inet_ntop(af_type,(void*)&ipv6->ip6_dst,dst_address_buffer,sizeof(dst_address_buffer));
-				break;
-			case 8:
-				inet_ntop(AF_INET,(void*)&ipv4->ip_src,src_address_buffer,sizeof(src_address_buffer));
-				inet_ntop(AF_INET6,(void*)&ipv6->ip6_dst,dst_address_buffer,sizeof(dst_address_buffer));
-		}
-
 
 		/* TLS Version (Record Layer - not proper proper) */
 		fp_packet->record_tls_version = (payload[1]*256) + payload[2];

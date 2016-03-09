@@ -147,9 +147,6 @@ char* ssl_version(u_short version) {
 
 /* Linked list/tree struct.  Used to import the binary blob file exported by fingerprintout.py */
 struct fingerprint_new {
-  uint16_t  fingerprint_id;
-  uint16_t  desc_length;
-  char      *desc;
   uint16_t  record_tls_version;
   uint16_t  tls_version;
   uint16_t  ciphersuite_length;
@@ -164,7 +161,6 @@ struct fingerprint_new {
   uint8_t   *sig_alg;
   uint16_t  ec_point_fmt_length;
   uint8_t   *ec_point_fmt;
-  struct    fingerprint_new  *next;
 };
 
 
