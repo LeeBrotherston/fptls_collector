@@ -533,57 +533,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		/* ********************************************* */
 
 
-		int matchcount = 0;
 
-		/* ************************* */
-		/* New Matching thinger test */
-		/* ************************* */
-		for(fp_nav = search[((fp_packet->ciphersuite_length & 0x000F) >> 1 )][((fp_packet->tls_version) & 0x00FF)] ;
-			fp_nav != NULL; fp_nav = fp_nav->next) {
-
-			// XXX Need to optimise order and remove duplicate checks already used during indexing.
-			if ((fp_packet->record_tls_version == fp_nav->record_tls_version) &&
-				(fp_packet->tls_version == fp_nav->tls_version) &&
-				/* XXX extensions_length is misleading!  Length is variable, it is a count of
-				   uint8_t's that makes the extensions _list_.  Furthermore, these values are
-					 in pairs, so the count is actually half this....  Handle much more carefully
-					 kthnxbai */
-				/* Note: check lengths match first, the later comparisons assume these already match */
-
-				(fp_packet->ciphersuite_length == fp_nav->ciphersuite_length) &&
-				(fp_packet->compression_length == fp_nav->compression_length) &&
-				(fp_packet->extensions_length == fp_nav->extensions_length) &&
-				(fp_packet->curves_length == fp_nav->curves_length) &&
-				(fp_packet->sig_alg_length == fp_nav->sig_alg_length) &&
-				(fp_packet->ec_point_fmt_length == fp_nav->ec_point_fmt_length) &&
-
-				!(bcmp(fp_packet->ciphersuite, fp_nav->ciphersuite, fp_nav->ciphersuite_length)) &&
-				!(bcmp(fp_packet->compression, fp_nav->compression, fp_nav->compression_length)) &&
-				!(bcmp(fp_packet->extensions, fp_nav->extensions, fp_nav->extensions_length)) &&
-				!(bcmp(realcurves, fp_nav->curves, fp_nav->curves_length)) &&
-				!(bcmp(realsig_alg, fp_nav->sig_alg, fp_nav->sig_alg_length)) &&
-				!(bcmp(realec_point_fmt, fp_nav->ec_point_fmt, fp_nav->ec_point_fmt_length))) {
-
-					/* Whole criteria match.... woo! */
-					matchcount++;
-					/*
-					fprintf(stdout, "[%s] Fingerprint Matched: \"%.*s\" %s connection from %s:%i to ", printable_time, fp_nav->desc_length ,fp_nav->desc, ssl_version(fp_nav->tls_version),
-						src_address_buffer, ntohs(tcp->th_sport));
-					fprintf(stdout, "%s:%i ", dst_address_buffer, ntohs(tcp->th_dport));
-					fprintf(stdout, "Servername: \"");
-					if(server_name != NULL) {
-						for (arse = 7 ; arse <= (server_name[0]*256 + server_name[1]) + 1 ; arse++) {
-							if (server_name[arse] > 0x20 && server_name[arse] < 0x7b)
-								fprintf(stdout, "%c", server_name[arse]);
-						}
-					} else {
-						fprintf(stdout, "Not Set");
-					}
-					fprintf(stdout, "\"");
-					if(matchcount > 1)
-						fprintf(stdout, "(Multiple Match)");
-					fprintf(stdout, "\n");
-					*/
 					/*
 					 * New output format.  JSON to allow easier automated parsing.
 					 */
@@ -675,117 +625,15 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 
 					fprintf(log_fd, "\" }\n");
 
-			} else {
-				// Fuzzy Match goes here (if we ever want it)
-
-			}
-
-		}
 
 		/* ********************************************* */
 
-
-		if(matchcount == 0) {
-			/* Write to unknown fingerprint pcap file (if opened already) */
-//			if(output_handle != NULL) {
-				//pcap_dump(output_handle, pcap_header, packet);
-//			}
-
-
-
-			/*
-				OK, we're setting up a signature, let's  actually do some memory fun
-			*/
-			uint8_t *temp;
-
-			/* Update pointer for next to the top of list */
-			fp_packet->next = search[((fp_packet->ciphersuite_length & 0x000F) >> 1 )][((fp_packet->tls_version) & 0x00FF)];
-
-			/* Populate the fingerprint */
-			fp_packet->fingerprint_id = 0;
-			fp_packet->desc_length = strlen("Dynamic ") + strlen(hostname) + 7; // 7 should cover the max uint16_t + space
-			fp_packet->desc = malloc(fp_packet->desc_length);
-
-			if(fp_packet->desc == NULL) {
-				printf("Malloc Error (desc)\n");
-				exit(0);
-			}
-			sprintf(fp_packet->desc, "Dynamic %s %d", hostname, newsig_count);
-
-
-			fp_packet->sig_alg = malloc(fp_packet->sig_alg_length);
-			if(fp_packet->sig_alg == NULL) {
-				printf("Malloc Error (sig_alg)\n");
-				exit(0);
-			}
-
-			fp_packet->ec_point_fmt = malloc(fp_packet->ec_point_fmt_length);
-			if(fp_packet->ec_point_fmt == NULL) {
-				printf("Malloc Error (ec_point_fmt)\n");
-				exit(0);
-			}
-
-			fp_packet->curves = malloc(fp_packet->curves_length);
-			if(fp_packet->curves == NULL) {
-				printf("Malloc Error (curves)\n");
-				exit(0);
-			}
-
-			temp = fp_packet->ciphersuite;
-			fp_packet->ciphersuite = malloc(fp_packet->ciphersuite_length);
-			if(fp_packet->ciphersuite == NULL) {
-				printf("Malloc Error (ciphersuites)\n");
-				exit(0);
-			}
-			memcpy(fp_packet->ciphersuite, temp, fp_packet->ciphersuite_length);
-
-			temp = fp_packet->compression;
-			fp_packet->compression = malloc(fp_packet->compression_length);
-			if(fp_packet->compression == NULL) {
-				printf("Malloc Error (compression)\n");
-				exit(0);
-			}
-			memcpy(fp_packet->compression, temp, fp_packet->compression_length);
-
-			memcpy(fp_packet->curves, realcurves, fp_packet->curves_length);
-			memcpy(fp_packet->sig_alg, realsig_alg, fp_packet->sig_alg_length);
-			memcpy(fp_packet->ec_point_fmt, realec_point_fmt, fp_packet->ec_point_fmt_length);
-
-
-			printf("[%s] New FingerPrint [%i] Detected, dynamically adding to in-memory fingerprint database\n", printable_time, newsig_count++);
-			fp_nav = fp_packet;	// Temporarily just point one thing to another for testing.
-
-
-			/*
-				Insert fingerprint as first in it's "list"
-			*/
-			search[((fp_packet->ciphersuite_length & 0x000F) >> 1 )][((fp_packet->tls_version) & 0x00FF)] = fp_packet;
-
-
-			/* If selected output in the normal stream */
-
-			printf("[%s] New Fingerprint \"%s\": %s connection from %s:%i to ", printable_time, fp_nav->desc, ssl_version(fp_packet->tls_version),
-				src_address_buffer, ntohs(tcp->th_sport));
-			printf("%s:%i ", dst_address_buffer, ntohs(tcp->th_dport));
-			printf("Servername: \"");
-			if(server_name != NULL) {
-				for (arse = 7 ; arse <= (server_name[0]*256 + server_name[1]) + 1 ; arse++) {
-					if (server_name[arse] > 0x20 && server_name[arse] < 0x7b)
-						printf("%c", server_name[arse]);
-				}
-			} else {
-				printf("Not Set");
-			}
-			printf("\"\n");
-
 			// Should just for json_fd being /dev/null and skip .. optimisation...
 			// or make an output function linked list XXX
-			fprintf(json_fd, "{\"id\": %i, \"desc\": \"", fp_packet->fingerprint_id);
-			fprintf(json_fd, "%s\", ", fp_packet->desc);
+			fprintf(json_fd, "{ ");
 			fprintf(json_fd, "\"record_tls_version\": \"0x%.04X\", ", fp_packet->record_tls_version);
 			fprintf(json_fd, "\"tls_version\": \"0x%.04X\", \"ciphersuite_length\": \"0x%.04X\", ",
 				fp_packet->tls_version, fp_packet->ciphersuite_length);
-
 			fprintf(json_fd, "\"ciphersuite\": \"");
 			for (arse = 0; arse < fp_packet->ciphersuite_length; ) {
 				fprintf(json_fd, "0x%.02X%.02X", (uint8_t) fp_packet->ciphersuite[arse], (uint8_t) fp_packet->ciphersuite[arse+1]);
@@ -794,12 +642,8 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 					fprintf(json_fd, " ");
 			}
 			fprintf(json_fd, "\", ");
-
-
-
 			fprintf(json_fd, "\"compression_length\": \"%i\", ",
 				fp_packet->compression_length);
-
 			fprintf(json_fd, " \"compression\": \"");
 			if (fp_packet->compression_length == 1) {
 				fprintf(json_fd, "0x%.02X", (uint8_t) fp_packet->compression[0]);
@@ -813,7 +657,6 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 			}
 
 			fprintf(json_fd, "\", ");
-
 
 			fprintf(json_fd, "\"extensions\": \"");
 			for (arse = 0 ; arse < fp_packet->extensions_length ;) {
@@ -892,8 +735,5 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 			fp_packet = NULL;
 			extensions_malloc = 0;
 
-		} else {
-
-		}
 
 }

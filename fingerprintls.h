@@ -213,7 +213,6 @@ char *default_filter = "(tcp[tcp[12]/16*4]=22 and (tcp[tcp[12]/16*4+5]=1) and (t
 int newsig_count;
 int show_drops;
 FILE *json_fd = NULL;
-FILE *fpdb_fd = NULL;
 FILE *log_fd = NULL;
 
 struct fingerprint_new *search[8][4];

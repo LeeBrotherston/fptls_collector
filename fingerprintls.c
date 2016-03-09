@@ -76,7 +76,6 @@ void print_usage(char *bin_name) {
 	fprintf(stderr, "    -l <log file>     Output logfile (JSON format)\n");
 //	fprintf(stderr, "    -s                Output JSON signatures of unknown connections to stdout\n");  // Comment this out as I'm trying to deprecate this
 	fprintf(stderr, "    -d                Show reasons for discarded packets (post BPF)\n");
-	fprintf(stderr, "    -f <fpdb>         Load the (binary) FingerPrint Database\n");
 	fprintf(stderr, "    -u <uid>          Drop privileges to specified UID (not username)\n");
 	fprintf(stderr, "\n");
 	return;
@@ -188,15 +187,6 @@ int main(int argc, char **argv) {
 				/* User for dropping privileges to */
 				unpriv_user = argv[++i];
 				break;
-			case 'f':
-				/* Read the *new* *sparkly* *probably broken* :) binary Fingerprint Database from file */
-				/* In the future this will be to override the default location as this will be the default format */
-				if((fpdb_fd = fopen(argv[++i], "r")) == NULL) {
-					printf("Cannot open fingerprint database file\n");
-					exit(-1);
-				}
-
-				break;
 			default :
 				printf("Unknown option '%s'\n", argv[i]);
 				exit(-1);
@@ -207,17 +197,6 @@ int main(int argc, char **argv) {
 
 	/* Checks required directly after switches are set */
 
-	/* Fingerprint DB to load */
-	/* This needs to be before the priv drop in case the fingerprint db requires root privs to read */
-	if(fpdb_fd == NULL) {
-		/* No filename set, trying the current directory */
-		if((fpdb_fd = fopen("tlsfp.db", "r")) == NULL) {
-			printf("Cannot open fingerprint database file (try -f)\n");
-			printf("(This is a new feature, tlsfp.db should be in the source code directory)\n");
-			exit(-1);
-		}
-
-	}
 
 	/* Interface should already be opened, and files read we can drop privs now */
 	/* This should stay the first action as lowering privs reduces risk from any subsequent actions */
@@ -241,123 +220,6 @@ int main(int argc, char **argv) {
 		exit(0);
 	}
 
-
-	/* XXX Temporary home, but need to test as early in the cycle as possible for now */
-	/* Load binary rules blob and parse */
-
-	/* XXX This if can go when this is "the way" */
-	if(fpdb_fd != NULL) {
-		/* Find the filesize (seek, tell, seekback) */
-		fseek(fpdb_fd, 0L, SEEK_END);
-		filesize = ftell(fpdb_fd);
-		fseek(fpdb_fd, 0L, SEEK_SET);
-
-		/* Allocate memory and store the file in fpdb_raw */
-		fpdb_raw = malloc(filesize);
-		if (fread(fpdb_raw, 1, filesize, fpdb_fd) == filesize) {
-			// printf("Yay, looks like the FPDB file loaded ok\n");
-			fclose(fpdb_fd);
-		} else {
-			printf("There seems to be a problem reading the FPDB file\n");
-			fclose(fpdb_fd);
-			exit(-1);
-		}
-	}
-
-	/* Check and move past the version header (quit if it's wrong) */
-	if (*fpdb_raw == 0) {
-		fpdb_raw++;
-	} else {
-		printf("Unknown version of FPDB file\n");
-		exit(-1);
-	}
-
-	int x, y;
-	//extern struct fingerprint_new *fp_first;
-	struct fingerprint_new *fp_current;
-	extern struct fingerprint_new *search[8][4];
-
-	/* Initialise so that we know when we are on the first in any one chain */
-	for (x = 0 ; x < 8 ; x++) {
-		for (y = 0 ; y < 4 ; y++) {
-			search[x][y] = NULL;
-		}
-	}
-
-	/* Filesize -1 because of the header, loops through the file, one loop per fingerprint */
-	for (x = 0 ; x < (filesize-1) ; fp_count++) {
-		/* Allocating one my one instead of in a block, may revise this plan later */
-		/* This will only save time on startup as opposed to during operation though */
-
-		/* Allocate out the memory for the one signature */
-		fp_current = malloc(sizeof(struct fingerprint_new));
-
-		// XXX consider copied (i.e. length) values being free'd to save a little RAM here and there <-- future thing
-
-		fp_current->fingerprint_id = (uint16_t) ((uint16_t)*(fpdb_raw+x) << 8) + ((uint8_t)*(fpdb_raw+x+1));
-		x += 2;
-		fp_current->desc_length =  (uint16_t) ((uint16_t)*(fpdb_raw+x) << 8) + ((uint8_t)*(fpdb_raw+x+1));
-		fp_current->desc = (char *)fpdb_raw+x+2;
-
-		x += (uint16_t) ((*(fpdb_raw+x) >> 16) + (*(fpdb_raw+x+1)) + 1); // Skip the description
-
-		fp_current->record_tls_version = (uint16_t) ((uint16_t)*(fpdb_raw+x+1) << 8) + ((uint8_t)*(fpdb_raw+x+2));
-		fp_current->tls_version = (uint16_t) ((uint16_t)*(fpdb_raw+x+3) << 8) + ((uint8_t)*(fpdb_raw+x+4));
-		fp_current->ciphersuite_length = (uint16_t) ((uint16_t)*(fpdb_raw+x+5) << 8) + ((uint8_t)*(fpdb_raw+x+6));
-		fp_current->ciphersuite = fpdb_raw+x+7;
-
-		x += (uint16_t) ((*(fpdb_raw+x+5) >> 16) + (*(fpdb_raw+x+6)))+7; // Skip the ciphersuites
-
-		fp_current->compression_length = *(fpdb_raw+x);
-		fp_current->compression = fpdb_raw+x+1;
-
-		x += (*(fpdb_raw+x))+1; // Skip over compression algo's
-
-		fp_current->extensions_length = (uint16_t) ((uint16_t)*(fpdb_raw+x) << 8) + ((uint8_t)*(fpdb_raw+x+1));
-		fp_current->extensions = fpdb_raw+x+2;
-
-		x += (uint16_t)((*(fpdb_raw+x) >> 16) + *(fpdb_raw+x+1))+2; // Skip extensions list (not extensions - just the list)
-
-		/* Lengths for the extensions which do not exist have already been set to 0 by fingerprintout.py */
-
-		fp_current->curves_length = (uint16_t) ((uint16_t)*(fpdb_raw+x) << 8) + ((uint8_t)*(fpdb_raw+x+1));
-
-		if(fp_current->curves_length == 0) {
-			fp_current->curves = NULL;
-		} else {
-			fp_current->curves = fpdb_raw+x+2;
-		}
-
-		x += (uint16_t)((*(fpdb_raw+x) >> 16) + *(fpdb_raw+x+1))+2;  // Skip past curves
-
-		fp_current->sig_alg_length = (uint16_t) ((uint16_t)*(fpdb_raw+x) << 8) + ((uint8_t)*(fpdb_raw+x+1));
-
-		if(fp_current->sig_alg_length == 0) {
-			fp_current->sig_alg = NULL;
-		} else {
-			fp_current->sig_alg = fpdb_raw+x+2;
-		}
-
-		x += (uint16_t)((*(fpdb_raw+x) >> 16) + *(fpdb_raw+x+1))+2;  // Skip past signature algorithms
-
-		fp_current->ec_point_fmt_length = (uint16_t) ((uint16_t)*(fpdb_raw+x) << 8) + ((uint8_t)*(fpdb_raw+x+1));
-
-		if(fp_current->ec_point_fmt_length == 0) {
-			fp_current->ec_point_fmt = NULL;
-		} else {
-			fp_current->ec_point_fmt = fpdb_raw+x+2;
-		}
-		x += (uint16_t)((*(fpdb_raw+x) >> 16) + *(fpdb_raw+x+1))+2;
-
-		/* Multi-array of pointers to appropriate (smaller) list */
-		/* XXX This should still be ordered for faster search */
-		fp_current->next = search[((fp_current->ciphersuite_length & 0x000F) >> 1 )][((fp_current->tls_version) & 0x00FF)];
-		search[((fp_current->ciphersuite_length & 0x000F) >> 1 )][((fp_current->tls_version) & 0x00FF)] = fp_current;
-	}
-
-	printf("Loaded %i signatures\n", fp_count);
-
-	/* XXX END TESTING OF BINARY RULES */
 
 	/* XXX HORRIBLE HORRIBLE KLUDGE TO AVOID if's everywhere.  I KNOW OK?! */
 	if(json_fd == NULL) {
