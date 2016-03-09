@@ -45,7 +45,7 @@ int register_signals() {
 /* Handles a variety of signals being recieved */
 void sig_handler (int signo) {
 	struct pcap_stat pstats;
-	extern FILE *json_fd;
+	extern FILE *log_fd;
 	extern pcap_t *handle;						/* packet capture handle */
 	extern pcap_dumper_t *output_handle;
 	extern struct bpf_program fp;					/* compiled filter program (expression) */
@@ -61,7 +61,7 @@ void sig_handler (int signo) {
 		case SIGINT:
 			// Close File Pointers
 			// Not even going to check, because, APP GOING DOWN!!
-			fclose(json_fd);
+			fclose(log_fd);
 
 			// Sort out libpcap stuff
 

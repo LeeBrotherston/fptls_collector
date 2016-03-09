@@ -42,7 +42,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		/* Variables, gotta have variables, and structs and pointers....  and things */
 		/* ************************************************************************* */
 
-		extern FILE *json_fd, *log_fd;
+		extern FILE *log_fd, *log_fd;
 		extern int newsig_count;
 		extern char hostname[HOST_NAME_MAX];
 
@@ -631,98 +631,98 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 
 		/* ********************************************* */
 
-		// Should just for json_fd being /dev/null and skip .. optimisation...
+		// Should just for log_fd being /dev/null and skip .. optimisation...
 		// or make an output function linked list XXX
-		fprintf(json_fd, "{ ");
-		fprintf(json_fd, "\"record_tls_version\": \"0x%.04X\", ", fp_packet->record_tls_version);
-		fprintf(json_fd, "\"tls_version\": \"0x%.04X\", \"ciphersuite_length\": \"0x%.04X\", ",
+		fprintf(log_fd, "{ ");
+		fprintf(log_fd, "\"record_tls_version\": \"0x%.04X\", ", fp_packet->record_tls_version);
+		fprintf(log_fd, "\"tls_version\": \"0x%.04X\", \"ciphersuite_length\": \"0x%.04X\", ",
 			fp_packet->tls_version, fp_packet->ciphersuite_length);
-		fprintf(json_fd, "\"ciphersuite\": \"");
+		fprintf(log_fd, "\"ciphersuite\": \"");
 		for (arse = 0; arse < fp_packet->ciphersuite_length; ) {
-			fprintf(json_fd, "0x%.02X%.02X", (uint8_t) fp_packet->ciphersuite[arse], (uint8_t) fp_packet->ciphersuite[arse+1]);
+			fprintf(log_fd, "0x%.02X%.02X", (uint8_t) fp_packet->ciphersuite[arse], (uint8_t) fp_packet->ciphersuite[arse+1]);
 			arse = arse + 2;
 			if(arse + 1 < fp_packet->ciphersuite_length)
-				fprintf(json_fd, " ");
+				fprintf(log_fd, " ");
 		}
-		fprintf(json_fd, "\", ");
-		fprintf(json_fd, "\"compression_length\": \"%i\", ",
+		fprintf(log_fd, "\", ");
+		fprintf(log_fd, "\"compression_length\": \"%i\", ",
 			fp_packet->compression_length);
-		fprintf(json_fd, " \"compression\": \"");
+		fprintf(log_fd, " \"compression\": \"");
 		if (fp_packet->compression_length == 1) {
-			fprintf(json_fd, "0x%.02X", (uint8_t) fp_packet->compression[0]);
+			fprintf(log_fd, "0x%.02X", (uint8_t) fp_packet->compression[0]);
 		} else {
 			for (arse = 0; arse < fp_packet->compression_length; ) {
-				fprintf(json_fd, "0x%.02X", (uint8_t) fp_packet->compression[arse]);
+				fprintf(log_fd, "0x%.02X", (uint8_t) fp_packet->compression[arse]);
 				arse++;
 				if(arse < fp_packet->compression_length)
-					fprintf(json_fd, " ");
+					fprintf(log_fd, " ");
 			}
 		}
 
-		fprintf(json_fd, "\", ");
+		fprintf(log_fd, "\", ");
 
-		fprintf(json_fd, "\"extensions\": \"");
+		fprintf(log_fd, "\"extensions\": \"");
 		for (arse = 0 ; arse < fp_packet->extensions_length ;) {
-			fprintf(json_fd, "0x%.02X%.02X", (uint8_t) fp_packet->extensions[arse], (uint8_t) fp_packet->extensions[arse+1]);
+			fprintf(log_fd, "0x%.02X%.02X", (uint8_t) fp_packet->extensions[arse], (uint8_t) fp_packet->extensions[arse+1]);
 			arse = arse + 2;
 			if(arse < ext_len -1)
-				fprintf(json_fd, " ");
+				fprintf(log_fd, " ");
 		}
-		fprintf(json_fd, "\"");
+		fprintf(log_fd, "\"");
 
 		if(fp_packet->curves != NULL) {
-			fprintf(json_fd, ", \"e_curves\": \"");
+			fprintf(log_fd, ", \"e_curves\": \"");
 
 			for (arse = 0 ; arse < fp_packet->curves_length &&
 				fp_packet->curves_length > 0 ; arse = arse + 2) {
 
-				fprintf(json_fd, "0x%.2X%.2X", fp_packet->curves[arse], fp_packet->curves[arse+1]);
+				fprintf(log_fd, "0x%.2X%.2X", fp_packet->curves[arse], fp_packet->curves[arse+1]);
 				if ((arse + 1) < fp_packet->curves_length) {
-					fprintf(json_fd, " ");
+					fprintf(log_fd, " ");
 				}
 			}
-			fprintf(json_fd, "\"");
+			fprintf(log_fd, "\"");
 		}
 
 		if(fp_packet->sig_alg != NULL) {
-			fprintf(json_fd, ", \"sig_alg\": \"");
+			fprintf(log_fd, ", \"sig_alg\": \"");
 
 			for (arse = 0 ; arse < (fp_packet->sig_alg_length) &&
 				fp_packet->sig_alg_length > 0 ; arse = arse + 2) {
 
-				fprintf(json_fd, "0x%.2X%.2X", fp_packet->sig_alg[arse], fp_packet->sig_alg[arse+1]);
+				fprintf(log_fd, "0x%.2X%.2X", fp_packet->sig_alg[arse], fp_packet->sig_alg[arse+1]);
 				if ((arse + 1) < (fp_packet->sig_alg_length)) {
-					fprintf(json_fd, " ");
+					fprintf(log_fd, " ");
 				}
 			}
-			fprintf(json_fd, "\"");
+			fprintf(log_fd, "\"");
 		}
 
 		if(fp_packet->ec_point_fmt != NULL) {
-			fprintf(json_fd, ", \"ec_point_fmt\": \"");
+			fprintf(log_fd, ", \"ec_point_fmt\": \"");
 
 			// Jumping to "3" to get past the second length parameter... errrr... why?
 			for (arse = 0 ; arse < fp_packet->ec_point_fmt_length; arse++) {
-				fprintf(json_fd, "0x%.2X", fp_packet->ec_point_fmt[arse]);
+				fprintf(log_fd, "0x%.2X", fp_packet->ec_point_fmt[arse]);
 				if ((arse + 1) < fp_packet->ec_point_fmt_length) {
-					fprintf(json_fd, " ");
+					fprintf(log_fd, " ");
 				}
 			}
-			fprintf(json_fd, "\"");
+			fprintf(log_fd, "\"");
 		}
 
 		if(server_name != NULL) {
-			fprintf(json_fd, ", \"server_name\": \"");
+			fprintf(log_fd, ", \"server_name\": \"");
 			for (arse = 7 ; arse <= (server_name[0]*256 + server_name[1]) + 1 ; arse++) {
 				if (server_name[arse] > 0x20 && server_name[arse] < 0x7b)
-					fprintf(json_fd, "%c", server_name[arse]);
+					fprintf(log_fd, "%c", server_name[arse]);
 				else
-					fprintf(json_fd, "*");
+					fprintf(log_fd, "*");
 			}
-			fprintf(json_fd, "\"");
+			fprintf(log_fd, "\"");
 		}
 
-		fprintf(json_fd, " } }\n");
+		fprintf(log_fd, " } }\n");
 		/* **************************** */
 		/* END OF RECORD - OR SOMETHING */
 		/* **************************** */

@@ -96,7 +96,7 @@ int main(int argc, char **argv) {
 	int arg_start = 1, i;
 	extern struct bpf_program fp;					/* compiled filter program (expression) */
 
-	extern FILE *json_fd, *log_fd;
+	extern FILE *log_fd;
 	extern int show_drops;
 	extern char hostname[HOST_NAME_MAX];
 	show_drops = 0;
@@ -154,15 +154,14 @@ int main(int argc, char **argv) {
 					printf("Cannot open log file for output\n");
 					exit(-1);
 				}
-				json_fd = log_fd;
 				// Buffering is fine, but linebuf needed for tailers to work properly
 				setlinebuf(log_fd);
 				break;
 			case 's':
 				/* JSON output to stdout */
-				if((json_fd = fopen("/dev/stdout", "a")) == NULL) {
+				if((log_fd = fopen("/dev/stdout", "a")) == NULL) {
 					printf("Cannot open JSON file for output\n");
-					fprintf(json_fd, "FD TEST\n");
+					fprintf(log_fd, "FD TEST\n");
 					exit(-1);
 				}
 				break;
@@ -209,8 +208,8 @@ int main(int argc, char **argv) {
 
 
 	/* XXX HORRIBLE HORRIBLE KLUDGE TO AVOID if's everywhere.  I KNOW OK?! */
-	if(json_fd == NULL) {
-		if((json_fd = fopen("/dev/null", "a")) == NULL) {
+	if(log_fd == NULL) {
+		if((log_fd = fopen("/dev/null", "a")) == NULL) {
 			printf("Cannot open JSON file (/dev/null) for output\n");
 			exit(-1);
 		}
