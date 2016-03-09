@@ -560,205 +560,205 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 
 
 
-					/*
-					 * New output format.  JSON to allow easier automated parsing.
-					 */
-					 fprintf(log_fd, "{ "); // May need more header to define type?
-					 fprintf(log_fd, "\"timestamp\": \"%s\", ", printable_time);
-					 fprintf(log_fd, "\"event\": \"connection\", ");
+		/*
+		 * New output format.  JSON to allow easier automated parsing.
+		 */
+		 fprintf(log_fd, "{ "); // May need more header to define type?
+		 fprintf(log_fd, "\"timestamp\": \"%s\", ", printable_time);
+		 fprintf(log_fd, "\"event\": \"connection\", ");
 
-					 fprintf(log_fd, "\"ip_version\": ");
-					 switch(ip_version) {
-						 case 4:
-						 	/* IPv4 */
-							fprintf(log_fd, "\"ipv4\", ");
-							inet_ntop(AF_INET,(void*)&ipv4->ip_src,src_address_buffer,sizeof(src_address_buffer));
-							inet_ntop(AF_INET,(void*)&ipv4->ip_dst,dst_address_buffer,sizeof(dst_address_buffer));
-							fprintf(log_fd, "\"ipv4_src\": \"%s\", ", src_address_buffer);
-							fprintf(log_fd, "\"ipv4_dst\": \"%s\", ", dst_address_buffer);
+		 fprintf(log_fd, "\"ip_version\": ");
+		 switch(ip_version) {
+			 case 4:
+			 	/* IPv4 */
+				fprintf(log_fd, "\"ipv4\", ");
+				inet_ntop(AF_INET,(void*)&ipv4->ip_src,src_address_buffer,sizeof(src_address_buffer));
+				inet_ntop(AF_INET,(void*)&ipv4->ip_dst,dst_address_buffer,sizeof(dst_address_buffer));
+				fprintf(log_fd, "\"ipv4_src\": \"%s\", ", src_address_buffer);
+				fprintf(log_fd, "\"ipv4_dst\": \"%s\", ", dst_address_buffer);
 
-							fprintf(log_fd, "\"src_port\": %hu, ", ntohs(tcp->th_sport));
-							fprintf(log_fd, "\"dst_port\": %hu, ", ntohs(tcp->th_dport));
+				fprintf(log_fd, "\"src_port\": %hu, ", ntohs(tcp->th_sport));
+				fprintf(log_fd, "\"dst_port\": %hu, ", ntohs(tcp->th_dport));
 
-							break;
-						 case 6:
-						 	/* IPv6 */
-							fprintf(log_fd, "\"ipv6\", ");
-							inet_ntop(AF_INET6,(void*)&ipv6->ip6_src,src_address_buffer,sizeof(src_address_buffer));
-							inet_ntop(AF_INET6,(void*)&ipv6->ip6_dst,dst_address_buffer,sizeof(dst_address_buffer));
-							fprintf(log_fd, "\"ipv6_src\": \"%s\", ", src_address_buffer);
-							fprintf(log_fd, "\"ipv6_dst\": \"%s\", ", dst_address_buffer);
+				break;
+			 case 6:
+			 	/* IPv6 */
+				fprintf(log_fd, "\"ipv6\", ");
+				inet_ntop(AF_INET6,(void*)&ipv6->ip6_src,src_address_buffer,sizeof(src_address_buffer));
+				inet_ntop(AF_INET6,(void*)&ipv6->ip6_dst,dst_address_buffer,sizeof(dst_address_buffer));
+				fprintf(log_fd, "\"ipv6_src\": \"%s\", ", src_address_buffer);
+				fprintf(log_fd, "\"ipv6_dst\": \"%s\", ", dst_address_buffer);
 
-							fprintf(log_fd, "\"src_port\": %hu, ", ntohs(tcp->th_sport));
-							fprintf(log_fd, "\"dst_port\": %hu, ", ntohs(tcp->th_dport));
-							break;
-						 case 7:
-						 	/*
-							 * Teredo.  As this is an IPv6 within IPv4 tunnel, both sets of address are logged.
-							 * The field names remain the same for ease of reporting on "all traffic from X" type
-							 * scenarios, however the "ip_version" field makes it clear that this is an encapsulted
-							 * tunnel.
-							 */
-							fprintf(log_fd, "\"teredo\", ");
-							inet_ntop(AF_INET,(void*)&ipv4->ip_src,src_address_buffer,sizeof(src_address_buffer));
-							inet_ntop(AF_INET,(void*)&ipv4->ip_dst,dst_address_buffer,sizeof(dst_address_buffer));
-							fprintf(log_fd, "\"ipv4_src\": \"%s\", ", src_address_buffer);
-							fprintf(log_fd, "\"ipv4_dst\": \"%s\", ", dst_address_buffer);
-							inet_ntop(AF_INET6,(void*)&ipv6->ip6_src,src_address_buffer,sizeof(src_address_buffer));
-							inet_ntop(AF_INET6,(void*)&ipv6->ip6_dst,dst_address_buffer,sizeof(dst_address_buffer));
-							fprintf(log_fd, "\"ipv6_src\": \"%s\", ", src_address_buffer);
-							fprintf(log_fd, "\"ipv6_dst\": \"%s\", ", dst_address_buffer);
+				fprintf(log_fd, "\"src_port\": %hu, ", ntohs(tcp->th_sport));
+				fprintf(log_fd, "\"dst_port\": %hu, ", ntohs(tcp->th_dport));
+				break;
+			 case 7:
+			 	/*
+				 * Teredo.  As this is an IPv6 within IPv4 tunnel, both sets of address are logged.
+				 * The field names remain the same for ease of reporting on "all traffic from X" type
+				 * scenarios, however the "ip_version" field makes it clear that this is an encapsulted
+				 * tunnel.
+				 */
+				fprintf(log_fd, "\"teredo\", ");
+				inet_ntop(AF_INET,(void*)&ipv4->ip_src,src_address_buffer,sizeof(src_address_buffer));
+				inet_ntop(AF_INET,(void*)&ipv4->ip_dst,dst_address_buffer,sizeof(dst_address_buffer));
+				fprintf(log_fd, "\"ipv4_src\": \"%s\", ", src_address_buffer);
+				fprintf(log_fd, "\"ipv4_dst\": \"%s\", ", dst_address_buffer);
+				inet_ntop(AF_INET6,(void*)&ipv6->ip6_src,src_address_buffer,sizeof(src_address_buffer));
+				inet_ntop(AF_INET6,(void*)&ipv6->ip6_dst,dst_address_buffer,sizeof(dst_address_buffer));
+				fprintf(log_fd, "\"ipv6_src\": \"%s\", ", src_address_buffer);
+				fprintf(log_fd, "\"ipv6_dst\": \"%s\", ", dst_address_buffer);
 
-							fprintf(log_fd, "\"src_port\": %hu, ", ntohs(tcp->th_sport));
-							fprintf(log_fd, "\"dst_port\": %hu, ", ntohs(tcp->th_dport));
+				fprintf(log_fd, "\"src_port\": %hu, ", ntohs(tcp->th_sport));
+				fprintf(log_fd, "\"dst_port\": %hu, ", ntohs(tcp->th_dport));
 
-							/* Add in ports of the outer Teredo tunnel? */
+				/* Add in ports of the outer Teredo tunnel? */
 
-							break;
-						 case 8:
-						 	/*
-							 * 6in4. 	As this is an IPv6 within IPv4 tunnel, both sets of address are logged.
-							 * The field names remain the same for ease of reporting on "all traffic from X" type
-							 * scenarios, however the "ip_version" field makes it clear that this is an encapsulted
-							 * tunnel.
-							 */
-							fprintf(log_fd, "\"6in4\", ");
-							inet_ntop(AF_INET,(void*)&ipv4->ip_src,src_address_buffer,sizeof(src_address_buffer));
-							inet_ntop(AF_INET,(void*)&ipv4->ip_dst,dst_address_buffer,sizeof(dst_address_buffer));
-							fprintf(log_fd, "\"ipv4_src\": \"%s\", ", src_address_buffer);
-							fprintf(log_fd, "\"ipv4_dst\": \"%s\", ", dst_address_buffer);
-							inet_ntop(AF_INET6,(void*)&ipv6->ip6_src,src_address_buffer,sizeof(src_address_buffer));
-							inet_ntop(AF_INET6,(void*)&ipv6->ip6_dst,dst_address_buffer,sizeof(dst_address_buffer));
-							fprintf(log_fd, "\"ipv6_src\": \"%s\", ", src_address_buffer);
-							fprintf(log_fd, "\"ipv6_dst\": \"%s\", ", dst_address_buffer);
+				break;
+			 case 8:
+			 	/*
+				 * 6in4. 	As this is an IPv6 within IPv4 tunnel, both sets of address are logged.
+				 * The field names remain the same for ease of reporting on "all traffic from X" type
+				 * scenarios, however the "ip_version" field makes it clear that this is an encapsulted
+				 * tunnel.
+				 */
+				fprintf(log_fd, "\"6in4\", ");
+				inet_ntop(AF_INET,(void*)&ipv4->ip_src,src_address_buffer,sizeof(src_address_buffer));
+				inet_ntop(AF_INET,(void*)&ipv4->ip_dst,dst_address_buffer,sizeof(dst_address_buffer));
+				fprintf(log_fd, "\"ipv4_src\": \"%s\", ", src_address_buffer);
+				fprintf(log_fd, "\"ipv4_dst\": \"%s\", ", dst_address_buffer);
+				inet_ntop(AF_INET6,(void*)&ipv6->ip6_src,src_address_buffer,sizeof(src_address_buffer));
+				inet_ntop(AF_INET6,(void*)&ipv6->ip6_dst,dst_address_buffer,sizeof(dst_address_buffer));
+				fprintf(log_fd, "\"ipv6_src\": \"%s\", ", src_address_buffer);
+				fprintf(log_fd, "\"ipv6_dst\": \"%s\", ", dst_address_buffer);
 
-							fprintf(log_fd, "\"src_port\": %hu, ", ntohs(tcp->th_sport));
-							fprintf(log_fd, "\"dst_port\": %hu, ", ntohs(tcp->th_dport));
-							break;
-					 }
+				fprintf(log_fd, "\"src_port\": %hu, ", ntohs(tcp->th_sport));
+				fprintf(log_fd, "\"dst_port\": %hu, ", ntohs(tcp->th_dport));
+				break;
+		 }
 
-					 fprintf(log_fd, "\"tls_version\": \"%s\", ", ssl_version(fp_packet->tls_version));
+		 fprintf(log_fd, "\"tls_version\": \"%s\", ", ssl_version(fp_packet->tls_version));
 
-					 fprintf(log_fd, "\"server_name\": \"");
+		 fprintf(log_fd, "\"server_name\": \"");
 
-					 if(server_name != NULL) {
- 						for (arse = 7 ; arse <= (server_name[0]*256 + server_name[1]) + 1 ; arse++) {
- 							if (server_name[arse] > 0x20 && server_name[arse] < 0x7b)
- 								fprintf(log_fd, "%c", server_name[arse]);
- 						}
- 					}
+		 if(server_name != NULL) {
+				for (arse = 7 ; arse <= (server_name[0]*256 + server_name[1]) + 1 ; arse++) {
+					if (server_name[arse] > 0x20 && server_name[arse] < 0x7b)
+						fprintf(log_fd, "%c", server_name[arse]);
+				}
+			}
 
-					fprintf(log_fd, "\", \"fingerprint\": ");
+		fprintf(log_fd, "\", \"fingerprint\": ");
 
 
 		/* ********************************************* */
 
-			// Should just for json_fd being /dev/null and skip .. optimisation...
-			// or make an output function linked list XXX
-			fprintf(json_fd, "{ ");
-			fprintf(json_fd, "\"record_tls_version\": \"0x%.04X\", ", fp_packet->record_tls_version);
-			fprintf(json_fd, "\"tls_version\": \"0x%.04X\", \"ciphersuite_length\": \"0x%.04X\", ",
-				fp_packet->tls_version, fp_packet->ciphersuite_length);
-			fprintf(json_fd, "\"ciphersuite\": \"");
-			for (arse = 0; arse < fp_packet->ciphersuite_length; ) {
-				fprintf(json_fd, "0x%.02X%.02X", (uint8_t) fp_packet->ciphersuite[arse], (uint8_t) fp_packet->ciphersuite[arse+1]);
-				arse = arse + 2;
-				if(arse + 1 < fp_packet->ciphersuite_length)
+		// Should just for json_fd being /dev/null and skip .. optimisation...
+		// or make an output function linked list XXX
+		fprintf(json_fd, "{ ");
+		fprintf(json_fd, "\"record_tls_version\": \"0x%.04X\", ", fp_packet->record_tls_version);
+		fprintf(json_fd, "\"tls_version\": \"0x%.04X\", \"ciphersuite_length\": \"0x%.04X\", ",
+			fp_packet->tls_version, fp_packet->ciphersuite_length);
+		fprintf(json_fd, "\"ciphersuite\": \"");
+		for (arse = 0; arse < fp_packet->ciphersuite_length; ) {
+			fprintf(json_fd, "0x%.02X%.02X", (uint8_t) fp_packet->ciphersuite[arse], (uint8_t) fp_packet->ciphersuite[arse+1]);
+			arse = arse + 2;
+			if(arse + 1 < fp_packet->ciphersuite_length)
+				fprintf(json_fd, " ");
+		}
+		fprintf(json_fd, "\", ");
+		fprintf(json_fd, "\"compression_length\": \"%i\", ",
+			fp_packet->compression_length);
+		fprintf(json_fd, " \"compression\": \"");
+		if (fp_packet->compression_length == 1) {
+			fprintf(json_fd, "0x%.02X", (uint8_t) fp_packet->compression[0]);
+		} else {
+			for (arse = 0; arse < fp_packet->compression_length; ) {
+				fprintf(json_fd, "0x%.02X", (uint8_t) fp_packet->compression[arse]);
+				arse++;
+				if(arse < fp_packet->compression_length)
 					fprintf(json_fd, " ");
 			}
-			fprintf(json_fd, "\", ");
-			fprintf(json_fd, "\"compression_length\": \"%i\", ",
-				fp_packet->compression_length);
-			fprintf(json_fd, " \"compression\": \"");
-			if (fp_packet->compression_length == 1) {
-				fprintf(json_fd, "0x%.02X", (uint8_t) fp_packet->compression[0]);
-			} else {
-				for (arse = 0; arse < fp_packet->compression_length; ) {
-					fprintf(json_fd, "0x%.02X", (uint8_t) fp_packet->compression[arse]);
-					arse++;
-					if(arse < fp_packet->compression_length)
-						fprintf(json_fd, " ");
+		}
+
+		fprintf(json_fd, "\", ");
+
+		fprintf(json_fd, "\"extensions\": \"");
+		for (arse = 0 ; arse < fp_packet->extensions_length ;) {
+			fprintf(json_fd, "0x%.02X%.02X", (uint8_t) fp_packet->extensions[arse], (uint8_t) fp_packet->extensions[arse+1]);
+			arse = arse + 2;
+			if(arse < ext_len -1)
+				fprintf(json_fd, " ");
+		}
+		fprintf(json_fd, "\"");
+
+		if(fp_packet->curves != NULL) {
+			fprintf(json_fd, ", \"e_curves\": \"");
+
+			for (arse = 0 ; arse < fp_packet->curves_length &&
+				fp_packet->curves_length > 0 ; arse = arse + 2) {
+
+				fprintf(json_fd, "0x%.2X%.2X", fp_packet->curves[arse], fp_packet->curves[arse+1]);
+				if ((arse + 1) < fp_packet->curves_length) {
+					fprintf(json_fd, " ");
 				}
-			}
-
-			fprintf(json_fd, "\", ");
-
-			fprintf(json_fd, "\"extensions\": \"");
-			for (arse = 0 ; arse < fp_packet->extensions_length ;) {
-				fprintf(json_fd, "0x%.02X%.02X", (uint8_t) fp_packet->extensions[arse], (uint8_t) fp_packet->extensions[arse+1]);
-				arse = arse + 2;
-				if(arse < ext_len -1)
-					fprintf(json_fd, " ");
 			}
 			fprintf(json_fd, "\"");
+		}
 
-			if(fp_packet->curves != NULL) {
-				fprintf(json_fd, ", \"e_curves\": \"");
+		if(fp_packet->sig_alg != NULL) {
+			fprintf(json_fd, ", \"sig_alg\": \"");
 
-				for (arse = 0 ; arse < fp_packet->curves_length &&
-					fp_packet->curves_length > 0 ; arse = arse + 2) {
+			for (arse = 0 ; arse < (fp_packet->sig_alg_length) &&
+				fp_packet->sig_alg_length > 0 ; arse = arse + 2) {
 
-					fprintf(json_fd, "0x%.2X%.2X", fp_packet->curves[arse], fp_packet->curves[arse+1]);
-					if ((arse + 1) < fp_packet->curves_length) {
-						fprintf(json_fd, " ");
-					}
+				fprintf(json_fd, "0x%.2X%.2X", fp_packet->sig_alg[arse], fp_packet->sig_alg[arse+1]);
+				if ((arse + 1) < (fp_packet->sig_alg_length)) {
+					fprintf(json_fd, " ");
 				}
-				fprintf(json_fd, "\"");
 			}
+			fprintf(json_fd, "\"");
+		}
 
-			if(fp_packet->sig_alg != NULL) {
-				fprintf(json_fd, ", \"sig_alg\": \"");
+		if(fp_packet->ec_point_fmt != NULL) {
+			fprintf(json_fd, ", \"ec_point_fmt\": \"");
 
-				for (arse = 0 ; arse < (fp_packet->sig_alg_length) &&
-					fp_packet->sig_alg_length > 0 ; arse = arse + 2) {
-
-					fprintf(json_fd, "0x%.2X%.2X", fp_packet->sig_alg[arse], fp_packet->sig_alg[arse+1]);
-					if ((arse + 1) < (fp_packet->sig_alg_length)) {
-						fprintf(json_fd, " ");
-					}
+			// Jumping to "3" to get past the second length parameter... errrr... why?
+			for (arse = 0 ; arse < fp_packet->ec_point_fmt_length; arse++) {
+				fprintf(json_fd, "0x%.2X", fp_packet->ec_point_fmt[arse]);
+				if ((arse + 1) < fp_packet->ec_point_fmt_length) {
+					fprintf(json_fd, " ");
 				}
-				fprintf(json_fd, "\"");
 			}
+			fprintf(json_fd, "\"");
+		}
 
-			if(fp_packet->ec_point_fmt != NULL) {
-				fprintf(json_fd, ", \"ec_point_fmt\": \"");
-
-				// Jumping to "3" to get past the second length parameter... errrr... why?
-				for (arse = 0 ; arse < fp_packet->ec_point_fmt_length; arse++) {
-					fprintf(json_fd, "0x%.2X", fp_packet->ec_point_fmt[arse]);
-					if ((arse + 1) < fp_packet->ec_point_fmt_length) {
-						fprintf(json_fd, " ");
-					}
-				}
-				fprintf(json_fd, "\"");
+		if(server_name != NULL) {
+			fprintf(json_fd, ", \"server_name\": \"");
+			for (arse = 7 ; arse <= (server_name[0]*256 + server_name[1]) + 1 ; arse++) {
+				if (server_name[arse] > 0x20 && server_name[arse] < 0x7b)
+					fprintf(json_fd, "%c", server_name[arse]);
+				else
+					fprintf(json_fd, "*");
 			}
+			fprintf(json_fd, "\"");
+		}
 
-			if(server_name != NULL) {
-				fprintf(json_fd, ", \"server_name\": \"");
-				for (arse = 7 ; arse <= (server_name[0]*256 + server_name[1]) + 1 ; arse++) {
-					if (server_name[arse] > 0x20 && server_name[arse] < 0x7b)
-						fprintf(json_fd, "%c", server_name[arse]);
-					else
-						fprintf(json_fd, "*");
-				}
-				fprintf(json_fd, "\"");
-			}
+		fprintf(json_fd, " } }\n");
+		/* **************************** */
+		/* END OF RECORD - OR SOMETHING */
+		/* **************************** */
 
-			fprintf(json_fd, "} }\n");
-			/* **************************** */
-			/* END OF RECORD - OR SOMETHING */
-			/* **************************** */
+		/* Write the sample packet out */
+		if(output_handle != NULL) {
+			pcap_dump((u_char *)output_handle, pcap_header, packet);
+		}
 
-			/* Write the sample packet out */
-			if(output_handle != NULL) {
-				pcap_dump((u_char *)output_handle, pcap_header, packet);
-			}
-
-			/*
-				Setup the new fp_packet for the next incoming packet.  Next call to this function will cause a malloc.
-			*/
-			fp_packet = NULL;
-			extensions_malloc = 0;
+		/*
+			Setup the new fp_packet for the next incoming packet.  Next call to this function will cause a malloc.
+		*/
+		fp_packet = NULL;
+		extensions_malloc = 0;
 
 
 }
