@@ -63,7 +63,6 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		struct tm print_time;
 		char printable_time[64];
 
-		struct fingerprint_new *fp_nav;			/* For navigating the fingerprint database */
 		static struct fingerprint_new *fp_packet = NULL;			/* Generated fingerprint for incoming packet */
 		static uint16_t	extensions_malloc = 0;							/* how much is currently allocated for the extensions field */
 		extern pcap_dumper_t *output_handle;					/* output to pcap handle */
@@ -638,8 +637,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 							break;
 					 }
 
-					 fprintf(log_fd, "\"tls_version\": \"%s\", ", ssl_version(fp_nav->tls_version));
-					 fprintf(log_fd, "\"fingerprint_desc\": \"%.*s\", ", fp_nav->desc_length, fp_nav->desc);
+					 fprintf(log_fd, "\"tls_version\": \"%s\", ", ssl_version(fp_packet->tls_version));
 
 					 fprintf(log_fd, "\"server_name\": \"");
 

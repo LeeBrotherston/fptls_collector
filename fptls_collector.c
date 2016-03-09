@@ -74,7 +74,6 @@ void print_usage(char *bin_name) {
 	fprintf(stderr, "    -P <pcap file>    Save packets to specified pcap file for unknown fingerprints\n");
 	fprintf(stderr, "    -j <json file>    Output JSON fingerprints\n");
 	fprintf(stderr, "    -l <log file>     Output logfile (JSON format)\n");
-//	fprintf(stderr, "    -s                Output JSON signatures of unknown connections to stdout\n");  // Comment this out as I'm trying to deprecate this
 	fprintf(stderr, "    -d                Show reasons for discarded packets (post BPF)\n");
 	fprintf(stderr, "    -u <uid>          Drop privileges to specified UID (not username)\n");
 	fprintf(stderr, "\n");
@@ -98,10 +97,7 @@ int main(int argc, char **argv) {
 	int arg_start = 1, i;
 	extern struct bpf_program fp;					/* compiled filter program (expression) */
 
-	extern FILE *json_fd, *fpdb_fd, *log_fd;
-	int filesize;
-	uint8_t *fpdb_raw = NULL;
-	int	fp_count = 0;
+	extern FILE *json_fd, *log_fd;
 	extern int show_drops;
 	extern char hostname[HOST_NAME_MAX];
 	show_drops = 0;
