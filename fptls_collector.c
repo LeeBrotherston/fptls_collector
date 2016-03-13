@@ -46,6 +46,9 @@ mistakes, kthnxbai.
 #include <net/ethernet.h>
 #include <netinet/ip6.h>
 
+/* Libcurl for the curling things, of course */
+#include <curl/curl.h>
+
 /* For TimeStamping from pcap_pkthdr */
 #include <time.h>
 
@@ -62,6 +65,8 @@ mistakes, kthnxbai.
 #include "packet_processing.c"
 
 
+
+
 /*
  * print help text
  */
@@ -75,6 +80,7 @@ void print_usage(char *bin_name) {
 	fprintf(stderr, "    -l <log file>     Output logfile (JSON format)\n");
 	fprintf(stderr, "    -d                Show reasons for discarded packets (post BPF)\n");
 	fprintf(stderr, "    -u <uid>          Drop privileges to specified UID (not username)\n");
+	fprintf(stderr, "    -I <injestor>     URL for injestor\n");
 	fprintf(stderr, "\n");
 	return;
 }
@@ -172,6 +178,13 @@ int main(int argc, char **argv) {
 			case 'u':
 				/* User for dropping privileges to */
 				unpriv_user = argv[++i];
+				break;
+			case 'I':
+				/* Setup CURL connection for Injestor */
+				curl = curl_easy_init();
+				if(curl) {
+					curl_easy_setopt(curl, CURLOPT_URL, argv[++i]);
+				}
 				break;
 			default :
 				printf("Unknown option '%s'\n", argv[i]);

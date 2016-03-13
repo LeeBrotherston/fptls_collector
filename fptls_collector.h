@@ -214,6 +214,12 @@ struct fingerprint_new *search[8][4];
 char hostname[HOST_NAME_MAX];			/* store the hostname once to save multiple lookups */
 
 
+CURL *curl;				// Curl resource for posting data elsewhere
+CURLcode res;			// More curl yo... more curl
+struct curl_httppost *formpost=NULL;
+struct curl_httppost *lastpost=NULL;
+
+
 /* These were in main, but this let's the signal handler close as needed */
 pcap_t *handle = NULL;						/* packet capture handle */
 pcap_dumper_t *output_handle = NULL;					/* output to pcap handle */
