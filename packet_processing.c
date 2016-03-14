@@ -46,13 +46,6 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		extern int newsig_count;
 		extern char hostname[HOST_NAME_MAX];
 
-		extern CURL *curl;				// Curl resource for posting data elsewhere
-		extern CURLcode res;			// More curl yo... more curl
-		extern struct curl_httppost *formpost;
-		extern struct curl_httppost *lastpost;
-
-
-
 		int size_ip = 0;
 		int size_tcp;
 		uint size_payload;  //  Check all these for appropiate variable size.  Was getting signed negative value and failing tests XXX
@@ -738,8 +731,6 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 
 		/* OK that's the log entry created, let's actually log it, eh? */
 		fprintf(log_fd, "%s", log_entry);
-
-
 
 
 		/* **************************** */
