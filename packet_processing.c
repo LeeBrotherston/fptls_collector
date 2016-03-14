@@ -65,11 +65,6 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		static struct fingerprint_new *fp_packet = NULL;			/* Generated fingerprint for incoming packet */
 		static uint16_t	extensions_malloc = 0;							/* how much is currently allocated for the extensions field */
 
-		static char *log_entry = NULL;											/* Buffer for log entries */
-		static uint16_t log_malloc = 1536;											/* Size of buffer used for log entry output */
-		char *log_cur, *log_end;														/* So that we can concat with snprintf */
-
-
 		extern pcap_dumper_t *output_handle;					/* output to pcap handle */
 
 		/* pointers to key places in the packet headers */
@@ -98,16 +93,6 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 				exit(0);
 			}
 		}
-
-		if(log_entry == NULL) {
-			log_entry = malloc(log_malloc);			/* Stab in the dark at a max, we *will* check before use */
-			if(log_entry == NULL) {
-					printf("Malloc Error (log_entry)\n");
-					exit(0);
-			}
-		}
-		log_cur = log_entry;								/* Not inside the loop so that this gets reset on subsequent loops */
-		log_end = log_entry + log_malloc;		/* If realloced later this will reset the end */
 
 
 		/* ************************************* */
@@ -728,9 +713,6 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		}
 
 		fprintf(log_fd,  " } }\n");
-
-		/* OK that's the log entry created, let's actually log it, eh? */
-		fprintf(log_fd, "%s", log_entry);
 
 
 		/* **************************** */
