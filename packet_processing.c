@@ -557,34 +557,34 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		/*
 		 * New output format.  JSON to allow easier automated parsing.
 		 */
-		 log_cur += snprintf(log_cur, log_end - log_cur,  "{ "); // May need more header to define type?
-		 log_cur += snprintf(log_cur, log_end - log_cur,  "\"timestamp\": \"%s\", ", printable_time);
-		 log_cur += snprintf(log_cur, log_end - log_cur,  "\"event\": \"connection\", ");
+		 fprintf(log_fd,  "{ "); // May need more header to define type?
+		 fprintf(log_fd,  "\"timestamp\": \"%s\", ", printable_time);
+		 fprintf(log_fd,  "\"event\": \"connection\", ");
 
-		 log_cur += snprintf(log_cur, log_end - log_cur,  "\"ip_version\": ");
+		 fprintf(log_fd,  "\"ip_version\": ");
 		 switch(ip_version) {
 			 case 4:
 			 	/* IPv4 */
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"ipv4\", ");
+				fprintf(log_fd,  "\"ipv4\", ");
 				inet_ntop(AF_INET,(void*)&ipv4->ip_src,src_address_buffer,sizeof(src_address_buffer));
 				inet_ntop(AF_INET,(void*)&ipv4->ip_dst,dst_address_buffer,sizeof(dst_address_buffer));
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"ipv4_src\": \"%s\", ", src_address_buffer);
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"ipv4_dst\": \"%s\", ", dst_address_buffer);
+				fprintf(log_fd,  "\"ipv4_src\": \"%s\", ", src_address_buffer);
+				fprintf(log_fd,  "\"ipv4_dst\": \"%s\", ", dst_address_buffer);
 
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"src_port\": %hu, ", ntohs(tcp->th_sport));
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"dst_port\": %hu, ", ntohs(tcp->th_dport));
+				fprintf(log_fd,  "\"src_port\": %hu, ", ntohs(tcp->th_sport));
+				fprintf(log_fd,  "\"dst_port\": %hu, ", ntohs(tcp->th_dport));
 
 				break;
 			 case 6:
 			 	/* IPv6 */
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"ipv6\", ");
+				fprintf(log_fd,  "\"ipv6\", ");
 				inet_ntop(AF_INET6,(void*)&ipv6->ip6_src,src_address_buffer,sizeof(src_address_buffer));
 				inet_ntop(AF_INET6,(void*)&ipv6->ip6_dst,dst_address_buffer,sizeof(dst_address_buffer));
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"ipv6_src\": \"%s\", ", src_address_buffer);
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"ipv6_dst\": \"%s\", ", dst_address_buffer);
+				fprintf(log_fd,  "\"ipv6_src\": \"%s\", ", src_address_buffer);
+				fprintf(log_fd,  "\"ipv6_dst\": \"%s\", ", dst_address_buffer);
 
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"src_port\": %hu, ", ntohs(tcp->th_sport));
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"dst_port\": %hu, ", ntohs(tcp->th_dport));
+				fprintf(log_fd,  "\"src_port\": %hu, ", ntohs(tcp->th_sport));
+				fprintf(log_fd,  "\"dst_port\": %hu, ", ntohs(tcp->th_dport));
 				break;
 			 case 7:
 			 	/*
@@ -593,18 +593,18 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 				 * scenarios, however the "ip_version" field makes it clear that this is an encapsulted
 				 * tunnel.
 				 */
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"teredo\", ");
+				fprintf(log_fd,  "\"teredo\", ");
 				inet_ntop(AF_INET,(void*)&ipv4->ip_src,src_address_buffer,sizeof(src_address_buffer));
 				inet_ntop(AF_INET,(void*)&ipv4->ip_dst,dst_address_buffer,sizeof(dst_address_buffer));
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"ipv4_src\": \"%s\", ", src_address_buffer);
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"ipv4_dst\": \"%s\", ", dst_address_buffer);
+				fprintf(log_fd,  "\"ipv4_src\": \"%s\", ", src_address_buffer);
+				fprintf(log_fd,  "\"ipv4_dst\": \"%s\", ", dst_address_buffer);
 				inet_ntop(AF_INET6,(void*)&ipv6->ip6_src,src_address_buffer,sizeof(src_address_buffer));
 				inet_ntop(AF_INET6,(void*)&ipv6->ip6_dst,dst_address_buffer,sizeof(dst_address_buffer));
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"ipv6_src\": \"%s\", ", src_address_buffer);
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"ipv6_dst\": \"%s\", ", dst_address_buffer);
+				fprintf(log_fd,  "\"ipv6_src\": \"%s\", ", src_address_buffer);
+				fprintf(log_fd,  "\"ipv6_dst\": \"%s\", ", dst_address_buffer);
 
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"src_port\": %hu, ", ntohs(tcp->th_sport));
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"dst_port\": %hu, ", ntohs(tcp->th_dport));
+				fprintf(log_fd,  "\"src_port\": %hu, ", ntohs(tcp->th_sport));
+				fprintf(log_fd,  "\"dst_port\": %hu, ", ntohs(tcp->th_dport));
 
 				/* Add in ports of the outer Teredo tunnel? */
 
@@ -616,118 +616,118 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 				 * scenarios, however the "ip_version" field makes it clear that this is an encapsulted
 				 * tunnel.
 				 */
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"6in4\", ");
+				fprintf(log_fd,  "\"6in4\", ");
 				inet_ntop(AF_INET,(void*)&ipv4->ip_src,src_address_buffer,sizeof(src_address_buffer));
 				inet_ntop(AF_INET,(void*)&ipv4->ip_dst,dst_address_buffer,sizeof(dst_address_buffer));
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"ipv4_src\": \"%s\", ", src_address_buffer);
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"ipv4_dst\": \"%s\", ", dst_address_buffer);
+				fprintf(log_fd,  "\"ipv4_src\": \"%s\", ", src_address_buffer);
+				fprintf(log_fd,  "\"ipv4_dst\": \"%s\", ", dst_address_buffer);
 				inet_ntop(AF_INET6,(void*)&ipv6->ip6_src,src_address_buffer,sizeof(src_address_buffer));
 				inet_ntop(AF_INET6,(void*)&ipv6->ip6_dst,dst_address_buffer,sizeof(dst_address_buffer));
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"ipv6_src\": \"%s\", ", src_address_buffer);
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"ipv6_dst\": \"%s\", ", dst_address_buffer);
+				fprintf(log_fd,  "\"ipv6_src\": \"%s\", ", src_address_buffer);
+				fprintf(log_fd,  "\"ipv6_dst\": \"%s\", ", dst_address_buffer);
 
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"src_port\": %hu, ", ntohs(tcp->th_sport));
-				log_cur += snprintf(log_cur, log_end - log_cur,  "\"dst_port\": %hu, ", ntohs(tcp->th_dport));
+				fprintf(log_fd,  "\"src_port\": %hu, ", ntohs(tcp->th_sport));
+				fprintf(log_fd,  "\"dst_port\": %hu, ", ntohs(tcp->th_dport));
 				break;
 		 }
 
-		 log_cur += snprintf(log_cur, log_end - log_cur,  "\"tls_version\": \"%s\", ", ssl_version(fp_packet->tls_version));
+		 fprintf(log_fd,  "\"tls_version\": \"%s\", ", ssl_version(fp_packet->tls_version));
 
-		 log_cur += snprintf(log_cur, log_end - log_cur,  "\"server_name\": \"");
+		 fprintf(log_fd,  "\"server_name\": \"");
 
 		 if(server_name != NULL) {
 				for (arse = 7 ; arse <= (server_name[0]*256 + server_name[1]) + 1 ; arse++) {
 					if (server_name[arse] > 0x20 && server_name[arse] < 0x7b)
-						log_cur += snprintf(log_cur, log_end - log_cur,  "%c", server_name[arse]);
+						fprintf(log_fd,  "%c", server_name[arse]);
 				}
 			}
 
-		log_cur += snprintf(log_cur, log_end - log_cur,  "\", \"fingerprint\": ");
+		fprintf(log_fd,  "\", \"fingerprint\": ");
 
 
 		/* ********************************************* */
 
 		// Should just for log_fd being /dev/null and skip .. optimisation...
 		// or make an output function linked list XXX
-		log_cur += snprintf(log_cur, log_end - log_cur,  "{ ");
-		log_cur += snprintf(log_cur, log_end - log_cur,  "\"record_tls_version\": \"0x%.04X\", ", fp_packet->record_tls_version);
-		log_cur += snprintf(log_cur, log_end - log_cur,  "\"tls_version\": \"0x%.04X\", \"ciphersuite_length\": \"0x%.04X\", ",
+		fprintf(log_fd,  "{ ");
+		fprintf(log_fd,  "\"record_tls_version\": \"0x%.04X\", ", fp_packet->record_tls_version);
+		fprintf(log_fd,  "\"tls_version\": \"0x%.04X\", \"ciphersuite_length\": \"0x%.04X\", ",
 			fp_packet->tls_version, fp_packet->ciphersuite_length);
-		log_cur += snprintf(log_cur, log_end - log_cur,  "\"ciphersuite\": \"");
+		fprintf(log_fd,  "\"ciphersuite\": \"");
 		for (arse = 0; arse < fp_packet->ciphersuite_length; ) {
-			log_cur += snprintf(log_cur, log_end - log_cur,  "0x%.02X%.02X", (uint8_t) fp_packet->ciphersuite[arse], (uint8_t) fp_packet->ciphersuite[arse+1]);
+			fprintf(log_fd,  "0x%.02X%.02X", (uint8_t) fp_packet->ciphersuite[arse], (uint8_t) fp_packet->ciphersuite[arse+1]);
 			arse = arse + 2;
 			if(arse + 1 < fp_packet->ciphersuite_length)
-				log_cur += snprintf(log_cur, log_end - log_cur,  " ");
+				fprintf(log_fd,  " ");
 		}
-		log_cur += snprintf(log_cur, log_end - log_cur,  "\", ");
-		log_cur += snprintf(log_cur, log_end - log_cur,  "\"compression_length\": \"%i\", ",
+		fprintf(log_fd,  "\", ");
+		fprintf(log_fd,  "\"compression_length\": \"%i\", ",
 			fp_packet->compression_length);
-		log_cur += snprintf(log_cur, log_end - log_cur,  " \"compression\": \"");
+		fprintf(log_fd,  " \"compression\": \"");
 		if (fp_packet->compression_length == 1) {
-			log_cur += snprintf(log_cur, log_end - log_cur,  "0x%.02X", (uint8_t) fp_packet->compression[0]);
+			fprintf(log_fd,  "0x%.02X", (uint8_t) fp_packet->compression[0]);
 		} else {
 			for (arse = 0; arse < fp_packet->compression_length; ) {
-				log_cur += snprintf(log_cur, log_end - log_cur,  "0x%.02X", (uint8_t) fp_packet->compression[arse]);
+				fprintf(log_fd,  "0x%.02X", (uint8_t) fp_packet->compression[arse]);
 				arse++;
 				if(arse < fp_packet->compression_length)
-					log_cur += snprintf(log_cur, log_end - log_cur,  " ");
+					fprintf(log_fd,  " ");
 			}
 		}
 
-		log_cur += snprintf(log_cur, log_end - log_cur,  "\", ");
+		fprintf(log_fd,  "\", ");
 
-		log_cur += snprintf(log_cur, log_end - log_cur,  "\"extensions\": \"");
+		fprintf(log_fd,  "\"extensions\": \"");
 		for (arse = 0 ; arse < fp_packet->extensions_length ;) {
-			log_cur += snprintf(log_cur, log_end - log_cur,  "0x%.02X%.02X", (uint8_t) fp_packet->extensions[arse], (uint8_t) fp_packet->extensions[arse+1]);
+			fprintf(log_fd,  "0x%.02X%.02X", (uint8_t) fp_packet->extensions[arse], (uint8_t) fp_packet->extensions[arse+1]);
 			arse = arse + 2;
 			if(arse < ext_len -1)
-				log_cur += snprintf(log_cur, log_end - log_cur,  " ");
+				fprintf(log_fd,  " ");
 		}
-		log_cur += snprintf(log_cur, log_end - log_cur,  "\"");
+		fprintf(log_fd,  "\"");
 
 		if(fp_packet->curves != NULL) {
-			log_cur += snprintf(log_cur, log_end - log_cur,  ", \"e_curves\": \"");
+			fprintf(log_fd,  ", \"e_curves\": \"");
 
 			for (arse = 0 ; arse < fp_packet->curves_length &&
 				fp_packet->curves_length > 0 ; arse = arse + 2) {
 
-				log_cur += snprintf(log_cur, log_end - log_cur,  "0x%.2X%.2X", fp_packet->curves[arse], fp_packet->curves[arse+1]);
+				fprintf(log_fd,  "0x%.2X%.2X", fp_packet->curves[arse], fp_packet->curves[arse+1]);
 				if ((arse + 1) < fp_packet->curves_length) {
-					log_cur += snprintf(log_cur, log_end - log_cur,  " ");
+					fprintf(log_fd,  " ");
 				}
 			}
-			log_cur += snprintf(log_cur, log_end - log_cur,  "\"");
+			fprintf(log_fd,  "\"");
 		}
 
 		if(fp_packet->sig_alg != NULL) {
-			log_cur += snprintf(log_cur, log_end - log_cur,  ", \"sig_alg\": \"");
+			fprintf(log_fd,  ", \"sig_alg\": \"");
 
 			for (arse = 0 ; arse < (fp_packet->sig_alg_length) &&
 				fp_packet->sig_alg_length > 0 ; arse = arse + 2) {
 
-				log_cur += snprintf(log_cur, log_end - log_cur,  "0x%.2X%.2X", fp_packet->sig_alg[arse], fp_packet->sig_alg[arse+1]);
+				fprintf(log_fd,  "0x%.2X%.2X", fp_packet->sig_alg[arse], fp_packet->sig_alg[arse+1]);
 				if ((arse + 2) < (fp_packet->sig_alg_length)) {
-					log_cur += snprintf(log_cur, log_end - log_cur,  " ");
+					fprintf(log_fd,  " ");
 				}
 			}
-			log_cur += snprintf(log_cur, log_end - log_cur,  "\"");
+			fprintf(log_fd,  "\"");
 		}
 
 		if(fp_packet->ec_point_fmt != NULL) {
-			log_cur += snprintf(log_cur, log_end - log_cur,  ", \"ec_point_fmt\": \"");
+			fprintf(log_fd,  ", \"ec_point_fmt\": \"");
 
 			// Jumping to "3" to get past the second length parameter... errrr... why?
 			for (arse = 0 ; arse < fp_packet->ec_point_fmt_length; arse++) {
-				log_cur += snprintf(log_cur, log_end - log_cur,  "0x%.2X", fp_packet->ec_point_fmt[arse]);
+				fprintf(log_fd,  "0x%.2X", fp_packet->ec_point_fmt[arse]);
 				if ((arse + 1) < fp_packet->ec_point_fmt_length) {
-					log_cur += snprintf(log_cur, log_end - log_cur,  " ");
+					fprintf(log_fd,  " ");
 				}
 			}
-			log_cur += snprintf(log_cur, log_end - log_cur,  "\"");
+			fprintf(log_fd,  "\"");
 		}
 
-		log_cur += snprintf(log_cur, log_end - log_cur,  " } }\n");
+		fprintf(log_fd,  " } }\n");
 
 		/* OK that's the log entry created, let's actually log it, eh? */
 		fprintf(log_fd, "%s", log_entry);
