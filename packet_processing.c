@@ -64,6 +64,8 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 
 		static struct fingerprint_new *fp_packet = NULL;			/* Generated fingerprint for incoming packet */
 		static uint16_t	extensions_malloc = 0;							/* how much is currently allocated for the extensions field */
+		static uint16_t subseccounter = 0;
+		static long int last_time = 0;
 
 		extern pcap_dumper_t *output_handle;					/* output to pcap handle */
 
@@ -107,7 +109,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 
 		packet_time = pcap_header->ts;
 		print_time = *localtime(&packet_time.tv_sec);
-		strftime(printable_time, sizeof printable_time, "%Y-%m-%d %H:%M:%S", &print_time);
+		strftime(printable_time, sizeof printable_time, "%FT%T%z", &print_time);
 
 
 		/* ******************************************** */
@@ -713,6 +715,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		}
 
 		fprintf(log_fd,  " } }\n");
+
 
 
 		/* **************************** */
