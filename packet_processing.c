@@ -64,8 +64,6 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 
 		static struct fingerprint_new *fp_packet = NULL;			/* Generated fingerprint for incoming packet */
 		static uint16_t	extensions_malloc = 0;							/* how much is currently allocated for the extensions field */
-		static uint16_t subseccounter = 0;
-		static long int last_time = 0;
 
 		extern pcap_dumper_t *output_handle;					/* output to pcap handle */
 
@@ -235,17 +233,6 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 				ipv6 = (struct ip6_hdr*)(packet + SIZE_ETHERNET + size_vlan_offset);
 				size_ip = 40;
 
-				/* TODO: Parse 'next header(s)' */
-				//printf("IP Version? %i\n",ntohl(ipv6->ip6_vfc)>>28);
-				//printf("Traffic Class? %i\n",(ntohl(ipv6->ip6_vfc)&0x0ff00000)>>24);
-				//printf("Flow Label? %i\n",ntohl(ipv6->ip6_vfc)&0xfffff);
-				//printf("Payload? %i\n",ntohs(ipv6->ip6_plen));
-				//printf("Next Header? %i\n",ipv6->ip6_nxt);
-
-				/* Note: Because the PCAP Libraries don't allow a BPF to adequately process TCP headers on IPv6
-					 packets we have had to accept all IPv6 TCP packets and so extra processing here to ensure
-					 that they're CLIENT_HELLO that is actually done in the BPF for v4.... damn you PCAP!! */
-
 				// XXX These lines are duplicated, will de-dupe later this is for testing without breaking :)
 				tcp = (struct tcp_header*)(packet + SIZE_ETHERNET + size_vlan_offset + size_ip);
 				payload = (u_char *)(packet + SIZE_ETHERNET + size_vlan_offset + size_ip + (tcp->th_off * 4));
@@ -319,11 +306,6 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 				/* Doesn't look like a valid TLS version.... probably not even a TLS packet, if it is, it's a bad one */
 				if(show_drops)
 					printf("[%s] Packet Drop: Bad TLS Version %X%X\n", printable_time, payload[OFFSET_HELLO_VERSION], payload[OFFSET_HELLO_VERSION+1]);
-					//printf("%X %X %X %X\n",payload[OFFSET_HELLO_VERSION-8],payload[OFFSET_HELLO_VERSION-7],payload[OFFSET_HELLO_VERSION-6],payload[OFFSET_HELLO_VERSION-5]);
-					//printf("%X %X %X %X\n",payload[OFFSET_HELLO_VERSION-4],payload[OFFSET_HELLO_VERSION-3],payload[OFFSET_HELLO_VERSION-2],payload[OFFSET_HELLO_VERSION-1]);
-					//printf("%X %X %X %X\n",payload[OFFSET_HELLO_VERSION],payload[OFFSET_HELLO_VERSION+1],payload[OFFSET_HELLO_VERSION+2],payload[OFFSET_HELLO_VERSION+3]);
-					//printf("%X %X %X %X\n",payload[OFFSET_HELLO_VERSION+4],payload[OFFSET_HELLO_VERSION+5],payload[OFFSET_HELLO_VERSION+6],payload[OFFSET_HELLO_VERSION+7]);
-					//printf("%X %X %X %X\n",payload[OFFSET_HELLO_VERSION+8],payload[OFFSET_HELLO_VERSION+9],payload[OFFSET_HELLO_VERSION+10],payload[OFFSET_HELLO_VERSION+11]);
 				return;
 		}
 
@@ -638,51 +620,40 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		// or make an output function linked list XXX
 		fprintf(log_fd,  "{ ");
 		fprintf(log_fd,  "\"record_tls_version\": \"0x%.04X\", ", fp_packet->record_tls_version);
-		fprintf(log_fd,  "\"tls_version\": \"0x%.04X\", \"ciphersuite_length\": \"0x%.04X\", ",
+		fprintf(log_fd,  "\"tls_version\": \"%.04X\", \"ciphersuite_length\": \"%.04X\", ",
 			fp_packet->tls_version, fp_packet->ciphersuite_length);
+
 		fprintf(log_fd,  "\"ciphersuite\": \"");
 		for (arse = 0; arse < fp_packet->ciphersuite_length; ) {
-			fprintf(log_fd,  "0x%.02X%.02X", (uint8_t) fp_packet->ciphersuite[arse], (uint8_t) fp_packet->ciphersuite[arse+1]);
-			arse = arse + 2;
-			if(arse + 1 < fp_packet->ciphersuite_length)
-				fprintf(log_fd,  " ");
+			fprintf(log_fd,  "%.02X", (uint8_t) fp_packet->ciphersuite[arse]);
+			arse++;
 		}
 		fprintf(log_fd,  "\", ");
+
 		fprintf(log_fd,  "\"compression_length\": \"%i\", ",
 			fp_packet->compression_length);
 		fprintf(log_fd,  " \"compression\": \"");
-		if (fp_packet->compression_length == 1) {
-			fprintf(log_fd,  "0x%.02X", (uint8_t) fp_packet->compression[0]);
-		} else {
-			for (arse = 0; arse < fp_packet->compression_length; ) {
-				fprintf(log_fd,  "0x%.02X", (uint8_t) fp_packet->compression[arse]);
-				arse++;
-				if(arse < fp_packet->compression_length)
-					fprintf(log_fd,  " ");
-			}
+		for (arse = 0; arse < fp_packet->compression_length; ) {
+			fprintf(log_fd,  "%.02X", (uint8_t) fp_packet->compression[arse]);
+			arse++;
 		}
-
 		fprintf(log_fd,  "\", ");
 
 		fprintf(log_fd,  "\"extensions\": \"");
 		for (arse = 0 ; arse < fp_packet->extensions_length ;) {
-			fprintf(log_fd,  "0x%.02X%.02X", (uint8_t) fp_packet->extensions[arse], (uint8_t) fp_packet->extensions[arse+1]);
-			arse = arse + 2;
-			if(arse < ext_len -1)
-				fprintf(log_fd,  " ");
+			fprintf(log_fd,  "%.02X", (uint8_t) fp_packet->extensions[arse]);
+			arse++;
 		}
 		fprintf(log_fd,  "\"");
+
 
 		if(fp_packet->curves != NULL) {
 			fprintf(log_fd,  ", \"e_curves\": \"");
 
 			for (arse = 0 ; arse < fp_packet->curves_length &&
-				fp_packet->curves_length > 0 ; arse = arse + 2) {
+				fp_packet->curves_length > 0 ; arse++) {
 
-				fprintf(log_fd,  "0x%.2X%.2X", fp_packet->curves[arse], fp_packet->curves[arse+1]);
-				if ((arse + 1) < fp_packet->curves_length) {
-					fprintf(log_fd,  " ");
-				}
+				fprintf(log_fd,  "%.2X", fp_packet->curves[arse]);
 			}
 			fprintf(log_fd,  "\"");
 		}
@@ -691,12 +662,9 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 			fprintf(log_fd,  ", \"sig_alg\": \"");
 
 			for (arse = 0 ; arse < (fp_packet->sig_alg_length) &&
-				fp_packet->sig_alg_length > 0 ; arse = arse + 2) {
+				fp_packet->sig_alg_length > 0 ; arse++) {
 
-				fprintf(log_fd,  "0x%.2X%.2X", fp_packet->sig_alg[arse], fp_packet->sig_alg[arse+1]);
-				if ((arse + 2) < (fp_packet->sig_alg_length)) {
-					fprintf(log_fd,  " ");
-				}
+				fprintf(log_fd,  "%.2X", fp_packet->sig_alg[arse]);
 			}
 			fprintf(log_fd,  "\"");
 		}
@@ -706,10 +674,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 
 			// Jumping to "3" to get past the second length parameter... errrr... why?
 			for (arse = 0 ; arse < fp_packet->ec_point_fmt_length; arse++) {
-				fprintf(log_fd,  "0x%.2X", fp_packet->ec_point_fmt[arse]);
-				if ((arse + 1) < fp_packet->ec_point_fmt_length) {
-					fprintf(log_fd,  " ");
-				}
+				fprintf(log_fd,  "%.2X", fp_packet->ec_point_fmt[arse]);
 			}
 			fprintf(log_fd,  "\"");
 		}
