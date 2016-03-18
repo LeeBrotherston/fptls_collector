@@ -619,7 +619,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		// Should just for log_fd being /dev/null and skip .. optimisation...
 		// or make an output function linked list XXX
 		fprintf(log_fd,  "{ ");
-		fprintf(log_fd,  "\"record_tls_version\": \"0x%.04X\", ", fp_packet->record_tls_version);
+		fprintf(log_fd,  "\"record_tls_version\": \"%.04X\", ", fp_packet->record_tls_version);
 		fprintf(log_fd,  "\"tls_version\": \"%.04X\", \"ciphersuite_length\": \"%.04X\", ",
 			fp_packet->tls_version, fp_packet->ciphersuite_length);
 
@@ -647,34 +647,37 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		fprintf(log_fd,  "\"");
 
 
-		if(fp_packet->curves != NULL) {
-			fprintf(log_fd,  ", \"e_curves\": \"");
+		if(realcurves != NULL) {
+			fprintf(log_fd, ", \"e_curves\": \"");
 
 			for (arse = 0 ; arse < fp_packet->curves_length &&
 				fp_packet->curves_length > 0 ; arse++) {
 
-				fprintf(log_fd,  "%.2X", fp_packet->curves[arse]);
+				fprintf(log_fd, "%.02X", (uint8_t)realcurves[arse]);
+
 			}
-			fprintf(log_fd,  "\"");
+			fprintf(log_fd, "\"");
 		}
 
-		if(fp_packet->sig_alg != NULL) {
+
+
+		if(realsig_alg != NULL) {
 			fprintf(log_fd,  ", \"sig_alg\": \"");
 
 			for (arse = 0 ; arse < (fp_packet->sig_alg_length) &&
 				fp_packet->sig_alg_length > 0 ; arse++) {
 
-				fprintf(log_fd,  "%.2X", fp_packet->sig_alg[arse]);
+				fprintf(log_fd,  "%.2X", (uint8_t) realsig_alg[arse]);
 			}
 			fprintf(log_fd,  "\"");
 		}
 
-		if(fp_packet->ec_point_fmt != NULL) {
+		if(realec_point_fmt != NULL) {
 			fprintf(log_fd,  ", \"ec_point_fmt\": \"");
 
 			// Jumping to "3" to get past the second length parameter... errrr... why?
 			for (arse = 0 ; arse < fp_packet->ec_point_fmt_length; arse++) {
-				fprintf(log_fd,  "%.2X", fp_packet->ec_point_fmt[arse]);
+				fprintf(log_fd,  "%.2X", (uint8_t) realec_point_fmt[arse]);
 			}
 			fprintf(log_fd,  "\"");
 		}
