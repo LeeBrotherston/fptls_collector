@@ -331,6 +331,16 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		/* CipherSuite */
 		packet_data += 1 + packet_data[0];
 		u_short cs_len = packet_data[0]*256 + packet_data[1];
+
+		/* Check that the offset doesn't push the pointer off the end of the payload */
+		if((packet_data + cs_len) >= (payload + size_payload)) {
+			if(show_drops == 1) {
+				fprintf(stderr, "CipherSuite length offset Beyond end of packet %s:%i to ", src_address_buffer, ntohs(tcp->th_sport));
+				fprintf(stderr, "%s:%i\n", dst_address_buffer, ntohs(tcp->th_dport));
+			}
+			return;
+		}
+
 		/* Length */
 		fp_packet->ciphersuite_length = (packet_data[0]*256) + packet_data[1];
 
@@ -346,6 +356,14 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		*/
 		u_short comp_len = packet_data[cs_len];
 
+		/* Check that the offset doesn't just past the end of the packet */
+		if((packet_data + comp_len) >= (payload + size_payload)) {
+			if(show_drops == 1) {
+				fprintf(stderr, "Compression length offset beyond end of packet %s:%i to ", src_address_buffer, ntohs(tcp->th_sport));
+				fprintf(stderr, "%s:%i\n", dst_address_buffer, ntohs(tcp->th_dport));
+			}
+			return;
+		}
 		/*
 			Length
 		*/
@@ -362,6 +380,15 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		*/
 		u_short ext_len = packet_data[comp_len]*256 + packet_data[comp_len+1];
 		int ext_id, ext_count = 0;
+
+		/* Check extension length doesn't run over the end of the packet */
+		if((packet_data + ext_len) >= (payload + size_payload)) {
+			if(show_drops == 1) {
+				fprintf(stderr, "Extension length offset Beyond end of packet %s:%i to ", src_address_buffer, ntohs(tcp->th_sport));
+				fprintf(stderr, "%s:%i\n", dst_address_buffer, ntohs(tcp->th_dport));
+			}
+			return;
+		}
 
 		/*
 			Length
@@ -446,9 +473,11 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 			/* Increment past the payload of the extensions */
 			ext_id += (packet_data[ext_id + 2]*256) + packet_data[ext_id + 3] + 3;
 
-			if((packet_data + ext_id) > (payload + size_payload)) {
-				fprintf(stderr, "Offset Beyond end of packet %s:%i to ", src_address_buffer, ntohs(tcp->th_sport));
-				fprintf(stderr, "%s:%i\n", dst_address_buffer, ntohs(tcp->th_dport));
+			if((packet_data + ext_id) >= (payload + size_payload)) {
+				if(show_drops == 1) {
+					fprintf(stderr, "Extension offset beyond end of packet %s:%i to ", src_address_buffer, ntohs(tcp->th_sport));
+					fprintf(stderr, "%s:%i\n", dst_address_buffer, ntohs(tcp->th_dport));
+				}
 				return;
 			}
 
