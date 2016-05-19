@@ -335,8 +335,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		/* Check that the offset doesn't push the pointer off the end of the payload */
 		if((packet_data + cs_len) >= (payload + size_payload)) {
 			if(show_drops == 1) {
-				fprintf(stderr, "CipherSuite length offset Beyond end of packet %s:%i to ", src_address_buffer, ntohs(tcp->th_sport));
-				fprintf(stderr, "%s:%i\n", dst_address_buffer, ntohs(tcp->th_dport));
+				fprintf(stderr, "CipherSuite length offset beyond end of packet");
 			}
 			return;
 		}
@@ -359,8 +358,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		/* Check that the offset doesn't just past the end of the packet */
 		if((packet_data + comp_len) >= (payload + size_payload)) {
 			if(show_drops == 1) {
-				fprintf(stderr, "Compression length offset beyond end of packet %s:%i to ", src_address_buffer, ntohs(tcp->th_sport));
-				fprintf(stderr, "%s:%i\n", dst_address_buffer, ntohs(tcp->th_dport));
+				fprintf(stderr, "Compression length offset beyond end of packet");
 			}
 			return;
 		}
@@ -384,8 +382,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		/* Check extension length doesn't run over the end of the packet */
 		if((packet_data + ext_len) >= (payload + size_payload)) {
 			if(show_drops == 1) {
-				fprintf(stderr, "Extension length offset Beyond end of packet %s:%i to ", src_address_buffer, ntohs(tcp->th_sport));
-				fprintf(stderr, "%s:%i\n", dst_address_buffer, ntohs(tcp->th_dport));
+				fprintf(stderr, "Extension length offset Beyond end of packet");
 			}
 			return;
 		}
@@ -475,8 +472,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 
 			if((packet_data + ext_id) >= (payload + size_payload)) {
 				if(show_drops == 1) {
-					fprintf(stderr, "Extension offset beyond end of packet %s:%i to ", src_address_buffer, ntohs(tcp->th_sport));
-					fprintf(stderr, "%s:%i\n", dst_address_buffer, ntohs(tcp->th_dport));
+					fprintf(stderr, "Extension offset beyond end of packet");
 				}
 				return;
 			}
