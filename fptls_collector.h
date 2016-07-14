@@ -209,6 +209,7 @@ char *default_filter = "(tcp[tcp[12]/16*4]=22 and (tcp[tcp[12]/16*4+5]=1) and (t
 int newsig_count;
 int show_drops;
 FILE *log_fd = NULL;
+sqlite3 *sqlite_db = NULL;
 
 struct fingerprint_new *search[8][4];
 char hostname[HOST_NAME_MAX];			/* store the hostname once to save multiple lookups */

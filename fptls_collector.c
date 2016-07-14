@@ -46,6 +46,9 @@ mistakes, kthnxbai.
 #include <net/ethernet.h>
 #include <netinet/ip6.h>
 
+/* SQLite3 Functionality */
+#include <sqlite3.h>
+
 /* For TimeStamping from pcap_pkthdr */
 #include <time.h>
 
@@ -77,6 +80,7 @@ void print_usage(char *bin_name) {
 	fprintf(stderr, "    -l <log file>     Output logfile (JSON format)\n");
 	fprintf(stderr, "    -d                Show reasons for discarded packets (post BPF)\n");
 	fprintf(stderr, "    -u <uid>          Drop privileges to specified UID (not username)\n");
+	fprintf(stderr, "    -q <file>         Use file to store sqlite spool (existing files possibly destroyed)\n");
 	fprintf(stderr, "\n");
 	return;
 }
@@ -103,6 +107,8 @@ int main(int argc, char **argv) {
 	extern char hostname[HOST_NAME_MAX];
 	show_drops = 0;
 
+	extern sqlite3 *sqlite_db;						/* Local database used to queue data before sending */
+	int return_code;
 
 	/* Make sure pipe sees new packets unbuffered. */
 	//setvbuf(stdout, (char *)NULL, _IOLBF, 0);
@@ -175,6 +181,20 @@ int main(int argc, char **argv) {
 				/* User for dropping privileges to */
 				unpriv_user = argv[++i];
 				break;
+			case 'q':
+				/* user specified sqlite3 database */
+				return_code = sqlite3_open(argv[++i], &sqlite_db);
+				if(return_code) {
+					fprintf(stderr, "Can't open SQLite3 database: %s\n", sqlite3_errmsg(sqlite_db));
+					sqlite3_close(sqlite_db);
+					exit(-1);
+				}
+				return_code = sqlite3_exec(sqlite_db, "CREATE TABLE IF NOT EXISTS queue (event TEXT NOT NULL, ip_version TEXT NOT NULL, ipv4_dst TEXT, ipv4_src TEXT, ipv6_dst TEXT, ipv6_src TEXT, src_port NUM, dst_port NUM, timestamp TEXT, tls_version TEXT, server_name TEXT, record_tls_version TEXT, sig_alg BLOB, extensions BLOB, ec_point_fmt BLOB, e_curves BLOB, connection TEXT, compression_length TEXT, ciphersuite_length INT, ciphersuite BLOB, compression BLOB);", NULL, NULL, NULL);
+				if(return_code != SQLITE_OK) {
+					printf("SQLite Barfed\n");
+					exit(-1);
+				}
+				break;
 			default :
 				printf("Unknown option '%s'\n", argv[i]);
 				exit(-1);
@@ -190,8 +210,13 @@ int main(int argc, char **argv) {
 	/* This should stay the first action as lowering privs reduces risk from any subsequent actions */
 	/* being poorly implimented and running as root */
 	if (unpriv_user != NULL) {
+		if (setgroups(0, NULL) == -1) {
+			fprintf(stderr, "WARNING: could not set groups to 0 prior to dropping privileges\n");
+		} else {
+			fprintf(stderr, "Dropped effective group successfully\n");
+		}
 		if (setgid(getgid()) == -1) {
-  		fprintf(stderr, "WARNING: could not drop group privileges\n");
+  			fprintf(stderr, "WARNING: could not drop group privileges\n");
 		} else {
 			fprintf(stderr, "Dropped effective group successfully\n");
 		}
@@ -208,6 +233,15 @@ int main(int argc, char **argv) {
 		exit(0);
 	}
 
+	/* Open default sqlite database if none selected */
+	if(sqlite_db == NULL) {
+		return_code = sqlite3_open("fingerprintls.db", &sqlite_db);
+		if(return_code) {
+			fprintf(stderr, "Can't open SQLite3 database: %s\n", sqlite3_errmsg(sqlite_db));
+			sqlite3_close(sqlite_db);
+			exit(-1);
+		}
+	}
 
 	/* XXX HORRIBLE HORRIBLE KLUDGE TO AVOID if's everywhere.  I KNOW OK?! */
 	if(log_fd == NULL) {

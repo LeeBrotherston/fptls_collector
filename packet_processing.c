@@ -30,6 +30,9 @@ mistakes, kthnxbai.
 
 // XXX reuse alloc'd space
 
+// Just leave this here...
+
+//  CREATE TABLE IF NOT EXISTS queue (event TEXT NOT NULL, ip_version TEXT NOT NULL, ipv4_dst TEXT, ipv4_src TEXT, ipv6_dst TEXT, ipv6_src TEXT, src_port NUM, dst_port NUM, timestamp TEXT, tls_version TEXT, server_name TEXT, record_tls_version TEXT, sig_alg BLOB, extensions BLOB, ec_point_fmt BLOB, e_curves BLOB, connection TEXT, compression_length TEXT, ciphersuite_length INT, ciphersuite BLOB, compression BLOB);
 
 uint shardnum (uint16_t port1, uint16_t port2, uint16_t maxshard) {
 				return (((port1 >> 8) + (port2 >> 8)) & (maxshard - 1));
@@ -79,6 +82,13 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		u_char *payload;                  /* Packet payload */
 
 		char *server_name;						/* Server name per the extension */
+
+
+		/* Prepared statement for sqlite insertion */
+		//                  "INSERT into queue (   1     ,  2  ,     3    ,   4    ,    5   ,    6   ,   7    ,    8   ,   9    ,    10     ,     11    ,        12        ,        13        ,     14    ,        15        ,    16     ,   17     ,   18  ,     19     ,   20   ,     21   ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+		char insert_sql[] = "INSERT into queue (timestamp,event,ip_version,ipv4_src,ipv4_dst,src_port,dst_port,ipv6_src,ipv6_dst,tls_version,server_name,record_tls_version,ciphersuite_length,ciphersuite,compression_length,compression,extensions,sig_alg,ec_point_fmt,e_curves,connection) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+		int return_code;
+		sqlite3_stmt *insert_statement = NULL;
 
 		/*
 			Check if this is uninitialised at this point and initialise if so.  This saves us copying
@@ -542,9 +552,13 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 			arse = arse + 4 + (((uint8_t) extensions_tmp_ptr[(arse+2)])*256) + (uint8_t)(extensions_tmp_ptr[arse+3]);
 		}
 
-		/* ********************************************* */
-		/* The "compare to the fingerprint database" bit */
-		/* ********************************************* */
+
+		/*
+		 * Going to get ready for some sqlite insert action here too
+		 */
+
+		 /* Compile the prepared statement, we will then bind variables */
+		 return_code = sqlite3_prepare_v2(sqlite_db, insert_sql, strlen(insert_sql), &insert_statement, NULL);
 
 
 
@@ -554,6 +568,10 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		 fprintf(log_fd,  "{ "); // May need more header to define type?
 		 fprintf(log_fd,  "\"timestamp\": \"%s\", ", printable_time);
 		 fprintf(log_fd,  "\"event\": \"connection\", ");
+
+		 /* XXX check return code on each bind */
+		 return_code = sqlite3_bind_text(insert_statement, 1, printable_time, sizeof(printable_time), NULL);
+		 return_code = sqlite3_bind_text(insert_statement, 2, "connection", sizeof("connection"), NULL);
 
 		 fprintf(log_fd,  "\"ip_version\": ");
 		 switch(ip_version) {
@@ -568,6 +586,12 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 				fprintf(log_fd,  "\"src_port\": %hu, ", ntohs(tcp->th_sport));
 				fprintf(log_fd,  "\"dst_port\": %hu, ", ntohs(tcp->th_dport));
 
+				return_code = sqlite3_bind_text(insert_statement, 3, "ipv4", sizeof("ipv4"), NULL);
+				return_code = sqlite3_bind_text(insert_statement, 4, src_address_buffer, sizeof(src_address_buffer), NULL);
+				return_code = sqlite3_bind_text(insert_statement, 5, dst_address_buffer, sizeof(dst_address_buffer), NULL);
+				return_code = sqlite3_bind_int(insert_statement, 6, ntohs(tcp->th_sport));
+				return_code = sqlite3_bind_int(insert_statement, 7, ntohs(tcp->th_dport));
+
 				break;
 			 case 6:
 			 	/* IPv6 */
@@ -579,6 +603,13 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 
 				fprintf(log_fd,  "\"src_port\": %hu, ", ntohs(tcp->th_sport));
 				fprintf(log_fd,  "\"dst_port\": %hu, ", ntohs(tcp->th_dport));
+
+				return_code = sqlite3_bind_text(insert_statement, 3, "ipv6", sizeof("ipv6"), NULL);
+				return_code = sqlite3_bind_text(insert_statement, 8, src_address_buffer, sizeof(src_address_buffer), NULL);
+				return_code = sqlite3_bind_text(insert_statement, 9, dst_address_buffer, sizeof(dst_address_buffer), NULL);
+				return_code = sqlite3_bind_int(insert_statement, 6, ntohs(tcp->th_sport));
+				return_code = sqlite3_bind_int(insert_statement, 7, ntohs(tcp->th_dport));
+
 				break;
 			 case 7:
 			 	/*
@@ -588,19 +619,36 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 				 * tunnel.
 				 */
 				fprintf(log_fd,  "\"teredo\", ");
+
+				return_code = sqlite3_bind_text(insert_statement, 3, "teredo", sizeof("teredo"), NULL);
+
 				inet_ntop(AF_INET,(void*)&ipv4->ip_src,src_address_buffer,sizeof(src_address_buffer));
 				inet_ntop(AF_INET,(void*)&ipv4->ip_dst,dst_address_buffer,sizeof(dst_address_buffer));
 				fprintf(log_fd,  "\"ipv4_src\": \"%s\", ", src_address_buffer);
 				fprintf(log_fd,  "\"ipv4_dst\": \"%s\", ", dst_address_buffer);
+
+				return_code = sqlite3_bind_text(insert_statement, 4, src_address_buffer, sizeof(src_address_buffer), NULL);
+				return_code = sqlite3_bind_text(insert_statement, 5, dst_address_buffer, sizeof(dst_address_buffer), NULL);
+
+
 				inet_ntop(AF_INET6,(void*)&ipv6->ip6_src,src_address_buffer,sizeof(src_address_buffer));
 				inet_ntop(AF_INET6,(void*)&ipv6->ip6_dst,dst_address_buffer,sizeof(dst_address_buffer));
 				fprintf(log_fd,  "\"ipv6_src\": \"%s\", ", src_address_buffer);
 				fprintf(log_fd,  "\"ipv6_dst\": \"%s\", ", dst_address_buffer);
 
+				return_code = sqlite3_bind_text(insert_statement, 8, src_address_buffer, sizeof(src_address_buffer), NULL);
+				return_code = sqlite3_bind_text(insert_statement, 9, dst_address_buffer, sizeof(dst_address_buffer), NULL);
+
+
 				fprintf(log_fd,  "\"src_port\": %hu, ", ntohs(tcp->th_sport));
 				fprintf(log_fd,  "\"dst_port\": %hu, ", ntohs(tcp->th_dport));
 
+				return_code = sqlite3_bind_int(insert_statement, 6, ntohs(tcp->th_sport));
+				return_code = sqlite3_bind_int(insert_statement, 7, ntohs(tcp->th_dport));
+
 				/* Add in ports of the outer Teredo tunnel? */
+
+
 
 				break;
 			 case 8:
@@ -611,30 +659,50 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 				 * tunnel.
 				 */
 				fprintf(log_fd,  "\"6in4\", ");
+
+				return_code = sqlite3_bind_text(insert_statement, 3, "6in4", sizeof("6in4"), NULL);
+
+
 				inet_ntop(AF_INET,(void*)&ipv4->ip_src,src_address_buffer,sizeof(src_address_buffer));
 				inet_ntop(AF_INET,(void*)&ipv4->ip_dst,dst_address_buffer,sizeof(dst_address_buffer));
 				fprintf(log_fd,  "\"ipv4_src\": \"%s\", ", src_address_buffer);
 				fprintf(log_fd,  "\"ipv4_dst\": \"%s\", ", dst_address_buffer);
+
+				return_code = sqlite3_bind_text(insert_statement, 4, src_address_buffer, sizeof(src_address_buffer), NULL);
+				return_code = sqlite3_bind_text(insert_statement, 5, dst_address_buffer, sizeof(dst_address_buffer), NULL);
+
+
 				inet_ntop(AF_INET6,(void*)&ipv6->ip6_src,src_address_buffer,sizeof(src_address_buffer));
 				inet_ntop(AF_INET6,(void*)&ipv6->ip6_dst,dst_address_buffer,sizeof(dst_address_buffer));
 				fprintf(log_fd,  "\"ipv6_src\": \"%s\", ", src_address_buffer);
 				fprintf(log_fd,  "\"ipv6_dst\": \"%s\", ", dst_address_buffer);
 
+				return_code = sqlite3_bind_text(insert_statement, 8, src_address_buffer, sizeof(src_address_buffer), NULL);
+				return_code = sqlite3_bind_text(insert_statement, 9, dst_address_buffer, sizeof(dst_address_buffer), NULL);
+
+
 				fprintf(log_fd,  "\"src_port\": %hu, ", ntohs(tcp->th_sport));
 				fprintf(log_fd,  "\"dst_port\": %hu, ", ntohs(tcp->th_dport));
+
+				return_code = sqlite3_bind_int(insert_statement, 6, ntohs(tcp->th_sport));
+				return_code = sqlite3_bind_int(insert_statement, 7, ntohs(tcp->th_dport));
+
 				break;
 		 }
 
 		 fprintf(log_fd,  "\"tls_version\": \"%s\", ", ssl_version(fp_packet->tls_version));
+		 return_code = sqlite3_bind_text(insert_statement, 10, ssl_version(fp_packet->tls_version), sizeof(ssl_version(fp_packet->tls_version)), NULL);
+
 
 		 fprintf(log_fd,  "\"server_name\": \"");
 
-		 if(server_name != NULL) {
+		if(server_name != NULL) {
 				for (arse = 7 ; arse <= (server_name[0]*256 + server_name[1]) + 1 ; arse++) {
 					if (server_name[arse] > 0x20 && server_name[arse] < 0x7b)
 						fprintf(log_fd,  "%c", server_name[arse]);
 				}
-			}
+				return_code = sqlite3_bind_text(insert_statement, 11, server_name + 7, ((server_name[0]*256 + server_name[1]) - 5), NULL);
+		}
 
 		fprintf(log_fd,  "\", \"fingerprint\": ");
 
@@ -644,19 +712,43 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		// Should just for log_fd being /dev/null and skip .. optimisation...
 		// or make an output function linked list XXX
 		fprintf(log_fd,  "{ ");
+
 		fprintf(log_fd,  "\"record_tls_version\": \"%.04X\", ", fp_packet->record_tls_version);
+		return_code = sqlite3_bind_text(insert_statement, 12, ssl_version(fp_packet->record_tls_version), sizeof(ssl_version(fp_packet->record_tls_version)), NULL);
+
+
 		fprintf(log_fd,  "\"tls_version\": \"%.04X\", \"ciphersuite_length\": \"%.04X\", ",
 			fp_packet->tls_version, fp_packet->ciphersuite_length);
+		/* TLS Version was actually done earlier */
+
+		/* XXX This is a (decimal) int, may remove as length(ciphersuite) will obtain this without the need for storage */
+		return_code = sqlite3_bind_int(insert_statement, 13, fp_packet->ciphersuite_length);
+
 
 		fprintf(log_fd,  "\"ciphersuite\": \"");
 		for (arse = 0; arse < fp_packet->ciphersuite_length; ) {
 			fprintf(log_fd,  "%.02X", (uint8_t) fp_packet->ciphersuite[arse]);
 			arse++;
 		}
+
 		fprintf(log_fd,  "\", ");
+
+		/* using blob to save conversion, etc.  Can use the hex() function in SQLite to get a hex representation */
+		return_code = sqlite3_bind_blob(insert_statement, 14, fp_packet->ciphersuite, fp_packet->ciphersuite_length, NULL);
+		if (return_code != SQLITE_OK) {
+			fprintf(stderr, "sqlite3 error: %i\n", return_code);
+		}
+
+
 
 		fprintf(log_fd,  "\"compression_length\": \"%i\", ",
 			fp_packet->compression_length);
+
+		/* XXX This is a (decimal) int, may remove as length(compression) will obtain this without the need for storage */
+		return_code = sqlite3_bind_int(insert_statement, 15, fp_packet->compression_length);
+
+
+
 		fprintf(log_fd,  " \"compression\": \"");
 		for (arse = 0; arse < fp_packet->compression_length; ) {
 			fprintf(log_fd,  "%.02X", (uint8_t) fp_packet->compression[arse]);
@@ -664,12 +756,19 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 		}
 		fprintf(log_fd,  "\", ");
 
+		/* using blob to save conversion, etc.  Can use the hex() function in SQLite to get a hex representation */
+		return_code = sqlite3_bind_blob(insert_statement, 16, fp_packet->compression, fp_packet->compression_length, NULL);
+
+
 		fprintf(log_fd,  "\"extensions\": \"");
 		for (arse = 0 ; arse < fp_packet->extensions_length ;) {
 			fprintf(log_fd,  "%.02X", (uint8_t) fp_packet->extensions[arse]);
 			arse++;
 		}
 		fprintf(log_fd,  "\"");
+
+		/* using blob to save conversion, etc.  Can use the hex() function in SQLite to get a hex representation */
+		return_code = sqlite3_bind_blob(insert_statement, 17, fp_packet->extensions, fp_packet->extensions_length, NULL);
 
 
 		if(realcurves != NULL) {
@@ -682,6 +781,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 
 			}
 			fprintf(log_fd, "\"");
+			return_code = sqlite3_bind_blob(insert_statement, 20, realcurves, fp_packet->curves_length, NULL);
 		}
 
 
@@ -695,6 +795,7 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 				fprintf(log_fd,  "%.2X", (uint8_t) realsig_alg[arse]);
 			}
 			fprintf(log_fd,  "\"");
+			return_code = sqlite3_bind_blob(insert_statement, 18, realsig_alg, fp_packet->sig_alg_length, NULL);
 		}
 
 		if(realec_point_fmt != NULL) {
@@ -705,11 +806,18 @@ void got_packet(u_char *args, const struct pcap_pkthdr *pcap_header, const u_cha
 				fprintf(log_fd,  "%.2X", (uint8_t) realec_point_fmt[arse]);
 			}
 			fprintf(log_fd,  "\"");
+			return_code = sqlite3_bind_blob(insert_statement, 19, realec_point_fmt, fp_packet->ec_point_fmt_length, NULL);
 		}
 
 		fprintf(log_fd,  " } }\n");
 
-
+		/* Run the INSERT, I think, ish XXX */
+		return_code = sqlite3_step(insert_statement);
+		if(SQLITE_DONE != return_code) {
+			fprintf(stderr, "A problem occured with the sqlite queue mechanism: %s\n", sqlite3_errmsg(sqlite_db));
+		} else {
+			sqlite3_finalize(insert_statement);
+		}
 
 		/* **************************** */
 		/* END OF RECORD - OR SOMETHING */
